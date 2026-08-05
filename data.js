@@ -1,8 +1,8 @@
 // 微头条工作台数据 - 由 WorkBuddy 自动化维护
-// 最后更新：2026-08-05 21:00
+// 最后更新：2026-08-06 00:40（测试推送）
 
 const DASHBOARD_DATA = {
-  lastUpdated: "2026-08-05 21:00",
+  lastUpdated: "2026-08-06 00:40 测试推送成功",
   totalToday: 10,
   totalAll: 10,
 
