@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>娱乐微头条创作工作台</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      line-height: 1.6;
+      min-height: 100vh;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* ===== Header ===== */
+    .header {
+      background: linear-gradient(135deg, #e63946 0%, #c1272d 100%);
+      color: #fff;
+      padding: 20px 16px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(230, 57, 70, 0.3);
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .header-date {
+      font-size: 0.75rem;
+      opacity: 0.85;
+      margin-top: 4px;
+    }
+    .header-stats {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .stat-badge {
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .stat-badge .num { font-size: 1rem; font-weight: 700; }
+    .stat-badge .label { opacity: 0.8; }
+
+    /* ===== Tab Bar ===== */
+    .tab-bar {
+      display: flex;
+      background: #fff;
+      border-bottom: 1px solid #e9ecef;
+      position: sticky;
+      top: 0;
+      z-index: 99;
+    }
+    .tab-item {
+      flex: 1;
+      text-align: center;
+      padding: 12px 0;
+      font-size: 0.875rem;
+      color: #6c757d;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      font-weight: 500;
+    }
+    .tab-item.active {
+      color: #e63946;
+      font-weight: 600;
+    }
+    .tab-item.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 32px;
+      height: 3px;
+      background: #e63946;
+      border-radius: 3px 3px 0 0;
+    }
+
+    /* ===== Content Area ===== */
+    .content-area {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 12px;
+      display: none;
+    }
+    .content-area.active { display: block; }
+
+    /* ===== Batch Filter ===== */
+    .batch-filter {
+      padding: 4px 0 12px;
+    }
+    .date-group {
+      margin-bottom: 10px;
+    }
+    .date-group-header {
+      font-size: 0.75rem;
+      color: #adb5bd;
+      font-weight: 600;
+      padding: 4px 0 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .date-group-header::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: #e63946;
+      border-radius: 50%;
+    }
+    .date-group-btns {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .batch-btn {
+      flex-shrink: 0;
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1px solid #e9ecef;
+      background: #fff;
+      font-size: 0.8rem;
+      color: #6c757d;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .batch-btn.active {
+      background: #e63946;
+      color: #fff;
+      border-color: #e63946;
+    }
+
+    /* ===== History Toggle ===== */
+    .history-toggle-wrap {
+      text-align: center;
+      padding: 8px 0 4px;
+    }
+    .history-toggle {
+      background: #fff;
+      border: 1px dashed #e9ecef;
+      border-radius: 20px;
+      padding: 8px 24px;
+      font-size: 0.78rem;
+      color: #6c757d;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .history-toggle:hover { border-color: #e63946; color: #e63946; }
+
+    /* ===== Content Card ===== */
+    .content-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      transition: all 0.2s;
+      position: relative;
+    }
+    .content-card:active {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .content-card.copied {
+      opacity: 0.5;
+    }
+    .copied-badge {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      background: #adb5bd;
+      color: #fff;
+      font-size: 0.65rem;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-weight: 500;
+      z-index: 2;
+      letter-spacing: 0.5px;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .card-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .tag {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    .tag-category {
+      background: #fff3f4;
+      color: #e63946;
+    }
+    .tag-source {
+      background: #f0f2f5;
+      color: #6c757d;
+    }
+    .card-num {
+      font-size: 0.7rem;
+      color: #adb5bd;
+      font-weight: 600;
+    }
+    .card-body {
+      font-size: 0.9rem;
+      line-height: 1.75;
+      color: #2d3436;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid #f5f5f5;
+    }
+    .card-time {
+      font-size: 0.7rem;
+      color: #adb5bd;
+      max-width: 65%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .copy-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 16px;
+      border-radius: 8px;
+      background: #e63946;
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .copy-btn:active {
+      transform: scale(0.95);
+    }
+    .copy-btn.copied {
+      background: #adb5bd;
+      cursor: default;
+    }
+    .copy-icon {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+
+    /* ===== Hot Topics ===== */
+    .topic-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .topic-rank {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .topic-rank.r1 { background: #e63946; }
+    .topic-rank.r2 { background: #f77f00; }
+    .topic-rank.r3 { background: #fcbf49; }
+    .topic-rank.r4, .topic-rank.r5, .topic-rank.r6, .topic-rank.r7, .topic-rank.r8 { background: #adb5bd; }
+    .topic-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .topic-title {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #2d3436;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .topic-meta {
+      font-size: 0.7rem;
+      color: #adb5bd;
+      margin-top: 2px;
+    }
+    .topic-heat {
+      flex-shrink: 0;
+      font-size: 0.75rem;
+      color: #e63946;
+      font-weight: 600;
+    }
+
+    /* ===== Style Profile ===== */
+    .style-section {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .style-section-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #1a1a2e;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .style-section-title::before {
+      content: '';
+      width: 3px;
+      height: 16px;
+      background: #e63946;
+      border-radius: 2px;
+    }
+    .style-list {
+      list-style: none;
+      padding: 0;
+    }
+    .style-list li {
+      font-size: 0.85rem;
+      color: #495057;
+      padding: 6px 0;
+      padding-left: 16px;
+      position: relative;
+      line-height: 1.6;
+    }
+    .style-list li::before {
+      content: '\00B7';
+      position: absolute;
+      left: 4px;
+      color: #e63946;
+      font-weight: 700;
+    }
+    .style-tag-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .style-tag {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: #fff3f4;
+      color: #e63946;
+    }
+    .style-summary {
+      font-size: 0.9rem;
+      color: #495057;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 3px solid #e63946;
+      line-height: 1.7;
+    }
+    .sample-opening {
+      font-size: 0.8rem;
+      color: #6c757d;
+      padding: 8px 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      font-style: italic;
+      border-left: 2px solid #fcbf49;
+    }
+
+    /* ===== Hot Source Links ===== */
+    .source-links {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .source-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      text-decoration: none;
+      color: #2d3436;
+      transition: all 0.2s;
+    }
+    .source-link:active { transform: scale(0.97); }
+    .source-link .icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; flex-shrink: 0;
+    }
+    .source-link .info { flex: 1; min-width: 0; }
+    .source-link .name { font-size: 0.82rem; font-weight: 600; }
+    .source-link .desc { font-size: 0.68rem; color: #adb5bd; margin-top: 1px; }
+    .source-link .arrow { color: #adb5bd; font-size: 0.9rem; }
+
+    /* ===== Info Banner ===== */
+    .info-banner {
+      background: #fff3f4;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      font-size: 0.78rem;
+      color: #c1272d;
+      line-height: 1.6;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+    .info-banner .icon { flex-shrink: 0; font-size: 0.9rem; }
+
+    /* ===== Empty State ===== */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #adb5bd;
+    }
+    .empty-state .icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+    }
+    .empty-state .text {
+      font-size: 0.875rem;
+    }
+
+    /* ===== Toast ===== */
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      padding: 10px 24px;
+      border-radius: 24px;
+      font-size: 0.85rem;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 999;
+      pointer-events: none;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ===== Refresh Bar ===== */
+    .refresh-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 0 8px;
+    }
+    .refresh-info {
+      font-size: 0.75rem;
+      color: #adb5bd;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="header-title">娱乐微头条创作工作台</div>
+        <div class="header-date" id="headerDate"></div>
+      </div>
+    </div>
+    <div class="header-stats">
+      <div class="stat-badge">
+        <span class="num" id="statToday">0</span>
+        <span class="label">今日已生成</span>
+      </div>
+      <div class="stat-badge">
+        <span class="num" id="statTotal">0</span>
+        <span class="label">累计内容</span>
+      </div>
+      <div class="stat-badge">
+        <span class="label" id="statUpdate">--</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <div class="tab-item active" data-tab="content">今日内容</div>
+    <div class="tab-item" data-tab="topics">热点素材</div>
+    <div class="tab-item" data-tab="style">风格档案</div>
+  </div>
+
+  <!-- ===== 今日内容 ===== -->
+  <div class="content-area active" id="tab-content">
+    <div class="batch-filter" id="batchFilter"></div>
+    <div class="refresh-bar">
+      <span class="refresh-info" id="refreshInfo"></span>
+    </div>
+    <div id="contentList"></div>
+  </div>
+
+  <!-- ===== 热点素材 ===== -->
+  <div class="content-area" id="tab-topics">
+    <div style="padding: 4px 0 12px; font-size: 0.8rem; color: #6c757d; font-weight: 500;">
+      实时热搜平台（点击直达）
+    </div>
+    <div class="source-links">
+      <a class="source-link" href="https://s.weibo.com/top/summary" target="_blank">
+        <div class="icon" style="background:#fff3f4;">🔥</div>
+        <div class="info">
+          <div class="name">微博热搜</div>
+          <div class="desc">实时娱乐热搜榜</div>
+        </div>
+        <span class="arrow">›</span>
+      </a>
+      <a class="source-link" href="https://www.toutiao.com/hot/" target="_blank">
+        <div class="icon" style="background:#fff3f4;">📰</div>
+        <div class="info">
+          <div class="name">头条热榜</div>
+          <div class="desc">今日头条热榜</div>
+        </div>
+        <span class="arrow">›</span>
+      </a>
+      <a class="source-link" href="https://www.douyin.com/hot" target="_blank">
+        <div class="icon" style="background:#fff3f4;">🎵</div>
+        <div class="info">
+          <div class="name">抖音热点</div>
+          <div class="desc">抖音热点榜</div>
+        </div>
+        <span class="arrow">›</span>
+      </a>
+      <a class="source-link" href="https://top.baidu.com/board?tab=realtime" target="_blank">
+        <div class="icon" style="background:#fff3f4;">🔍</div>
+        <div class="info">
+          <div class="name">百度热搜</div>
+          <div class="desc">百度实时热搜</div>
+        </div>
+        <span class="arrow">›</span>
+      </a>
+    </div>
+
+    <div class="info-banner">
+      <span class="icon">💡</span>
+      <span>自动化每次运行时会自动搜索以上平台的热点，抓取30+条娱乐热点保存到「热点素材」文件夹。下方为最近一次抓取的热点列表。</span>
+    </div>
+
+    <div style="padding: 4px 0 12px; font-size: 0.8rem; color: #6c757d; font-weight: 500;">
+      最近抓取的热点素材
+    </div>
+    <div id="topicList"></div>
+  </div>
+
+  <!-- ===== 风格档案 ===== -->
+  <div class="content-area" id="tab-style">
+    <div id="styleProfile"></div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">已复制到剪贴板</div>
+
+  <script src="data.js"></script>
+  <script>
+    // ===== Constants =====
+    const COPIED_PREFIX = 'toutiao_copied_';
+    const HISTORY_DAYS = 10;
+
+    // ===== State =====
+    let historyExpanded = false;
+    let currentBatchIdx = 0;
+
+    // ===== Compute Date Cutoff =====
+    const cutoffDate = new Date();
+    cutoffDate.setHours(0, 0, 0, 0);
+    cutoffDate.setDate(cutoffDate.getDate() - HISTORY_DAYS);
+    const cutoffStr = cutoffDate.toISOString().split('T')[0];
+
+    const allBatches = DASHBOARD_DATA.batches;
+    const recentBatches = allBatches.filter(function(b) { return b.date >= cutoffStr; });
+    const historyBatches = allBatches.filter(function(b) { return b.date < cutoffStr; });
+
+    function getVisibleBatches() {
+      return historyExpanded ? allBatches : recentBatches;
+    }
+
+    // ===== Copy State (localStorage) =====
+    function isCopied(itemId) {
+      try {
+        return localStorage.getItem(COPIED_PREFIX + itemId) === '1';
+      } catch(e) {
+        return false;
+      }
+    }
+
+    function markCopied(itemId) {
+      try {
+        localStorage.setItem(COPIED_PREFIX + itemId, '1');
+      } catch(e) {}
+    }
+
+    // ===== Tab Switching =====
+    document.querySelectorAll('.tab-item').forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.tab-item').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('.content-area').forEach(function(c) { c.classList.remove('active'); });
+        tab.classList.add('active');
+        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    // ===== Format Date =====
+    function formatDate(dateStr) {
+      var d = new Date(dateStr);
+      if (isNaN(d)) return dateStr;
+      var months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+      var days = ['周日','周一','周二','周三','周四','周五','周六'];
+      return months[d.getMonth()] + d.getDate() + '日 ' + days[d.getDay()];
+    }
+
+    function formatDateShort(dateStr) {
+      var d = new Date(dateStr);
+      if (isNaN(d)) return dateStr;
+      var months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+      return months[d.getMonth()] + d.getDate() + '日';
+    }
+
+    // ===== Render Header =====
+    function renderHeader() {
+      var now = new Date();
+      var months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+      var days = ['周日','周一','周二','周三','周四','周五','周六'];
+      document.getElementById('headerDate').textContent =
+        months[now.getMonth()] + now.getDate() + '日 ' + days[now.getDay()] + ' \00B7 ' +
+        String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+
+      document.getElementById('statToday').textContent = DASHBOARD_DATA.totalToday;
+      document.getElementById('statTotal').textContent = DASHBOARD_DATA.totalAll;
+      document.getElementById('statUpdate').textContent = '\u66F4\u65B0\u4E8E ' + DASHBOARD_DATA.lastUpdated.split(' ')[1];
+      document.getElementById('refreshInfo').textContent =
+        '\u5171 ' + DASHBOARD_DATA.batches.length + ' \u6279\u6B21 \00B7 \u6700\u540E\u66F4\u65B0 ' + DASHBOARD_DATA.lastUpdated;
+    }
+
+    // ===== Render Batch Filter (grouped by date, 10-day limit) =====
+    function renderBatchFilter() {
+      var container = document.getElementById('batchFilter');
+      container.innerHTML = '';
+
+      var visibleBatches = getVisibleBatches();
+      if (visibleBatches.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:20px;color:#adb5bd;font-size:0.85rem;">暂无内容，等待自动化生成</div>';
+        return;
+      }
+
+      // Group visible batches by date
+      var dateGroups = {};
+      visibleBatches.forEach(function(batch) {
+        if (!dateGroups[batch.date]) dateGroups[batch.date] = [];
+        dateGroups[batch.date].push(batch);
+      });
+
+      // Sort dates descending
+      var sortedDates = Object.keys(dateGroups).sort().reverse();
+
+      // Build flat index map for each batch
+      var batchIndexMap = {};
+      visibleBatches.forEach(function(batch, idx) {
+        batchIndexMap[batch.date + '_' + batch.batch] = idx;
+      });
+
+      // Render date groups
+      sortedDates.forEach(function(date) {
+        var group = document.createElement('div');
+        group.className = 'date-group';
+
+        var header = document.createElement('div');
+        header.className = 'date-group-header';
+        header.textContent = formatDate(date);
+        group.appendChild(header);
+
+        var btnsWrap = document.createElement('div');
+        btnsWrap.className = 'date-group-btns';
+
+        dateGroups[date].forEach(function(batch) {
+          var idx = batchIndexMap[batch.date + '_' + batch.batch];
+          var btn = document.createElement('button');
+          btn.className = 'batch-btn';
+          if (idx === currentBatchIdx && currentBatchIdx < visibleBatches.length) {
+            btn.classList.add('active');
+          }
+          btn.textContent = '\u7B2C' + batch.batch + '\u6279 ' + batch.time;
+          btn.addEventListener('click', (function(i) {
+            return function() {
+              currentBatchIdx = i;
+              renderBatchFilter();
+              renderContentList(i);
+            };
+          })(idx));
+          btnsWrap.appendChild(btn);
+        });
+
+        group.appendChild(btnsWrap);
+        container.appendChild(group);
+      });
+
+      // History toggle
+      if (historyBatches.length > 0 || historyExpanded) {
+        var toggleWrap = document.createElement('div');
+        toggleWrap.className = 'history-toggle-wrap';
+
+        var toggleBtn = document.createElement('button');
+        toggleBtn.className = 'history-toggle';
+        if (historyExpanded) {
+          toggleBtn.textContent = '\u2591 \u6536\u8D77\u5386\u53F2\u5185\u5BB9 \u2591';
+        } else {
+          toggleBtn.textContent = '\u25BC \u5C55\u5F00\u5386\u53F2\u5185\u5BB9 (' + historyBatches.length + '\u6279)';
+        }
+        toggleBtn.addEventListener('click', function() {
+          historyExpanded = !historyExpanded;
+          currentBatchIdx = 0;
+          renderBatchFilter();
+          renderContentList(0);
+        });
+        toggleWrap.appendChild(toggleBtn);
+        container.appendChild(toggleWrap);
+      }
+    }
+
+    // ===== Render Content List =====
+    function renderContentList(batchIdx) {
+      var container = document.getElementById('contentList');
+      var visibleBatches = getVisibleBatches();
+      var batch = visibleBatches[batchIdx];
+
+      container.innerHTML = '';
+
+      if (!batch || !batch.items || batch.items.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">\uD83D\uDCDD</div><div class="text">\u672C\u6279\u6B21\u6682\u65E0\u5185\u5BB9<br>\u8BF7\u7B49\u5F85\u81EA\u52A8\u5316\u751F\u6210</div></div>';
+        return;
+      }
+
+      // Date header
+      var dateDiv = document.createElement('div');
+      dateDiv.style.cssText = 'text-align:center;padding:4px 0 12px;font-size:0.75rem;color:#adb5bd;font-weight:500;';
+      dateDiv.textContent = formatDate(batch.date);
+      container.appendChild(dateDiv);
+
+      // Render each item
+      batch.items.forEach(function(item, idx) {
+        var card = document.createElement('div');
+        card.className = 'content-card';
+        var itemCopied = isCopied(item.id);
+        if (itemCopied) {
+          card.classList.add('copied');
+        }
+
+        var badgeHtml = itemCopied ? '<span class="copied-badge">\u5DF2\u590D\u5236</span>' : '';
+        var copyBtnClass = itemCopied ? 'copy-btn copied' : 'copy-btn';
+        var copyBtnText = itemCopied ? '\u5DF2\u590D\u5236' : '\u590D\u5236';
+
+        card.innerHTML = badgeHtml + '\n          <div class="card-header">\n            <div class="card-tags">\n              <span class="tag tag-category">' + escapeHtml(item.category) + '</span>\n              <span class="tag tag-source">' + escapeHtml(item.source) + '</span>\n            </div>\n            <span class="card-num">#' + String(idx + 1).padStart(2, '0') + '</span>\n          </div>\n          <div class="card-body">' + escapeHtml(item.content) + '</div>\n          <div class="card-footer">\n            <span class="card-time">\u7B2C' + batch.batch + '\u6279 \00B7 ' + batch.time + ' \00B7 ' + escapeHtml(item.topic) + '</span>\n            <button class="' + copyBtnClass + '" data-id="' + item.id + '" ' + (itemCopied ? 'disabled' : '') + '>\n              <svg class="copy-icon" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>\n              <span>' + copyBtnText + '</span>\n            </button>\n          </div>';
+
+        container.appendChild(card);
+      });
+
+      // Bind copy buttons
+      container.querySelectorAll('.copy-btn:not(.copied)').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var id = parseInt(btn.dataset.id);
+          var item = batch.items.find(function(i) { return i.id === id; });
+          if (item) {
+            copyToClipboard(item.content);
+            markCopied(id);
+
+            // Update button
+            btn.classList.add('copied');
+            btn.querySelector('span').textContent = '\u5DF2\u590D\u5236';
+            btn.disabled = true;
+
+            // Update card
+            var card = btn.closest('.content-card');
+            if (card) {
+              card.classList.add('copied');
+              // Check if badge already exists
+              if (!card.querySelector('.copied-badge')) {
+                var badge = document.createElement('span');
+                badge.className = 'copied-badge';
+                badge.textContent = '\u5DF2\u590D\u5236';
+                card.insertBefore(badge, card.firstChild);
+              }
+            }
+
+            showToast('\u5DF2\u590D\u5236\u5230\u526A\u8D34\u677F');
+          }
+        });
+      });
+    }
+
+    // ===== Render Hot Topics =====
+    function renderTopics() {
+      var container = document.getElementById('topicList');
+      container.innerHTML = '';
+      DASHBOARD_DATA.hotTopics.forEach(function(topic) {
+        var card = document.createElement('div');
+        card.className = 'topic-card';
+        card.innerHTML = '\n          <div class="topic-rank r' + topic.rank + '">' + topic.rank + '</div>\n          <div class="topic-info">\n            <div class="topic-title">' + escapeHtml(topic.topic) + '</div>\n            <div class="topic-meta">' + escapeHtml(topic.source) + '</div>\n          </div>\n          <div class="topic-heat">' + escapeHtml(topic.heat) + '</div>\n        ';
+        container.appendChild(card);
+      });
+    }
+
+    // ===== Render Style Profile =====
+    function renderStyle() {
+      var container = document.getElementById('styleProfile');
+      var s = DASHBOARD_DATA.styleProfile;
+      container.innerHTML = '\n        <div class="style-section">\n          <div class="style-section-title">\u98CE\u683C\u6982\u8FF0</div>\n          <div class="style-summary">' + escapeHtml(s.summary) + '</div>\n        </div>\n\n        <div class="style-section">\n          <div class="style-section-title">\u5F00\u5934\u5957\u8DEF</div>\n          <ul class="style-list">\n            ' + s.openings.map(function(o) { return '<li>' + escapeHtml(o) + '</li>'; }).join('') + '\n          </ul>\n        </div>\n\n        <div class="style-section">\n          <div class="style-section-title">\u5185\u5BB9\u7ED3\u6784</div>\n          <ul class="style-list">\n            ' + s.structure.map(function(o) { return '<li>' + escapeHtml(o) + '</li>'; }).join('') + '\n          </ul>\n        </div>\n\n        <div class="style-section">\n          <div class="style-section-title">\u5199\u4F5C\u6280\u5DE7</div>\n          <ul class="style-list">\n            ' + s.techniques.map(function(o) { return '<li>' + escapeHtml(o) + '</li>'; }).join('') + '\n          </ul>\n        </div>\n\n        <div class="style-section">\n          <div class="style-section-title">\u8BED\u8A00\u98CE\u683C</div>\n          <div class="style-tag-group">\n            <span class="style-tag">' + escapeHtml(s.tone) + '</span>\n          </div>\n        </div>\n\n        <div class="style-section">\n          <div class="style-section-title">\u6536\u5C3E\u65B9\u5F0F</div>\n          <ul class="style-list">\n            ' + s.endings.map(function(o) { return '<li>' + escapeHtml(o) + '</li>'; }).join('') + '\n          </ul>\n        </div>\n\n        <div class="style-section">\n          <div class="style-section-title">\u793A\u4F8B\u5F00\u5934</div>\n          ' + s.sampleOpenings.map(function(o) { return '<div class="sample-opening">' + escapeHtml(o) + '</div>'; }).join('') + '\n        </div>\n      ';
+    }
+
+    // ===== Utilities =====
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function copyToClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).catch(function() {
+          fallbackCopy(text);
+        });
+      } else {
+        fallbackCopy(text);
+      }
+    }
+
+    function fallbackCopy(text) {
+      var textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try { document.execCommand('copy'); } catch(e) {}
+      document.body.removeChild(textarea);
+    }
+
+    function showToast(msg) {
+      var toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(function() { toast.classList.remove('show'); }, 2000);
+    }
+
+    // ===== Init =====
+    renderHeader();
+    renderBatchFilter();
+    renderContentList(0);
+    renderTopics();
+    renderStyle();
+  </script>
+</body>
+</html>
