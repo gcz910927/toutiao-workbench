@@ -606,8 +606,7 @@ const DASHBOARD_DATA = {
 你们看电影的时候，会在意哪些镜头是替身完成的吗？`
         }
       ]
-    }
-  ],
+    },
     {
       batch: 5,
       time: "19:00",
@@ -856,6 +855,8 @@ const DASHBOARD_DATA = {
         }
       ]
     },
+
+  ],
 
   hotTopics: [
     { rank: 1, topic: "陈伟霆《九门》直播上水果天塌了表情包刷屏", source: "微博热搜", heat: "爆" },
