@@ -223,6 +223,11 @@
       background: #f0f2f5;
       color: #6c757d;
     }
+    .tag-heat {
+      background: linear-gradient(135deg, #ff6b35, #e63946);
+      color: #fff;
+      font-weight: 700;
+    }
     .card-num {
       font-size: 0.7rem;
       color: #adb5bd;
@@ -234,6 +239,26 @@
       color: #2d3436;
       white-space: pre-wrap;
       word-break: break-word;
+    }
+    .card-body.collapsed {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      white-space: normal;
+      position: relative;
+      cursor: pointer;
+    }
+    .card-body.collapsed::after {
+      content: '\5C55\5F00\5168\6587 \25BE';
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      padding-left: 30px;
+      background: linear-gradient(to right, rgba(255,255,255,0) 0%, #ffffff 40%);
+      color: #e63946;
+      font-size: 0.72rem;
+      line-height: 1.5;
     }
     .card-footer {
       display: flex;
@@ -795,7 +820,11 @@
         var copyBtnClass = itemCopied ? 'copy-btn copied' : 'copy-btn';
         var copyBtnText = itemCopied ? '\u5DF2\u590D\u5236' : '\u590D\u5236';
 
-        card.innerHTML = badgeHtml + '\n          <div class="card-header">\n            <div class="card-tags">\n              <span class="tag tag-category">' + escapeHtml(item.category) + '</span>\n              <span class="tag tag-source">' + escapeHtml(item.source) + '</span>\n            </div>\n            <span class="card-num">#' + String(idx + 1).padStart(2, '0') + '</span>\n          </div>\n          <div class="card-body">' + escapeHtml(item.content) + '</div>\n          <div class="card-footer">\n            <span class="card-time">\u7B2C' + batch.batch + '\u6279 \00B7 ' + batch.time + ' \00B7 ' + escapeHtml(item.topic) + '</span>\n            <button class="' + copyBtnClass + '" data-id="' + item.id + '" ' + (itemCopied ? 'disabled' : '') + '>\n              <svg class="copy-icon" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>\n              <span>' + copyBtnText + '</span>\n            </button>\n          </div>';
+        // Heat badge: only show when item.heat contains a real numeric value (filters "热度未知"/missing)
+        var heatHtml = (item.heat && /[0-9]/.test(String(item.heat)))
+          ? '<span class="tag tag-heat">\uD83D\uDD25 ' + escapeHtml(item.heat) + '</span>' : '';
+
+        card.innerHTML = badgeHtml + '\n          <div class="card-header">\n            <div class="card-tags">\n              <span class="tag tag-category">' + escapeHtml(item.category) + '</span>\n              <span class="tag tag-source">' + escapeHtml(item.source) + '</span>\n              ' + heatHtml + '\n            </div>\n            <span class="card-num">#' + String(idx + 1).padStart(2, '0') + '</span>\n          </div>\n          <div class="card-body' + (itemCopied ? ' collapsed' : '') + '">' + escapeHtml(item.content) + '</div>\n          <div class="card-footer">\n            <span class="card-time">\u7B2C' + batch.batch + '\u6279 \00B7 ' + batch.time + ' \00B7 ' + escapeHtml(item.topic) + '</span>\n            <button class="' + copyBtnClass + '" data-id="' + item.id + '" ' + (itemCopied ? 'disabled' : '') + '>\n              <svg class="copy-icon" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>\n              <span>' + copyBtnText + '</span>\n            </button>\n          </div>';
 
         container.appendChild(card);
       });
@@ -818,6 +847,8 @@
             var card = btn.closest('.content-card');
             if (card) {
               card.classList.add('copied');
+              var bodyEl = card.querySelector('.card-body');
+              if (bodyEl) bodyEl.classList.add('collapsed');
               // Check if badge already exists
               if (!card.querySelector('.copied-badge')) {
                 var badge = document.createElement('span');
@@ -829,6 +860,13 @@
 
             showToast('\u5DF2\u590D\u5236\u5230\u526A\u8D34\u677F');
           }
+        });
+      });
+
+      // Tap collapsed body to expand / re-collapse
+      container.querySelectorAll('.card-body').forEach(function(body) {
+        body.addEventListener('click', function() {
+          body.classList.toggle('collapsed');
         });
       });
     }
