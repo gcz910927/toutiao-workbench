@@ -169,6 +169,84 @@
     }
     .history-toggle:hover { border-color: #e63946; color: #e63946; }
 
+    /* ===== Three-level Accordion (日期 → 批次 → 内容) ===== */
+    .acc-date {
+      background: #fff;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      overflow: hidden;
+    }
+    .acc-date-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #1a1a2e;
+    }
+    .acc-date-head .meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .acc-date-head .count {
+      font-size: 0.68rem;
+      font-weight: 500;
+      color: #fff;
+      background: #e63946;
+      border-radius: 10px;
+      padding: 2px 8px;
+    }
+    .chevron {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      color: #adb5bd;
+      transition: transform 0.25s ease;
+    }
+    .acc-date.open > .acc-date-head .chevron { transform: rotate(180deg); }
+    .acc-date-body {
+      display: none;
+      padding: 4px 12px 12px;
+    }
+    .acc-date.open > .acc-date-body { display: block; }
+
+    .acc-batch {
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      overflow: hidden;
+    }
+    .acc-batch-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 12px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #495057;
+    }
+    .acc-batch-head .meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .acc-batch-head .count {
+      font-size: 0.68rem;
+      color: #adb5bd;
+      font-weight: 500;
+    }
+    .acc-batch.open > .acc-batch-head .chevron { transform: rotate(180deg); }
+    .acc-batch-body {
+      display: none;
+      padding: 4px 4px 6px;
+    }
+    .acc-batch.open > .acc-batch-body { display: block; }
+
     /* ===== Content Card ===== */
     .content-card {
       background: #fff;
@@ -556,11 +634,10 @@
 
   <!-- ===== 今日内容 ===== -->
   <div class="content-area active" id="tab-content">
-    <div class="batch-filter" id="batchFilter"></div>
     <div class="refresh-bar">
       <span class="refresh-info" id="refreshInfo"></span>
     </div>
-    <div id="contentList"></div>
+    <div id="accordion"></div>
   </div>
 
   <!-- ===== 热点素材 ===== -->
@@ -630,7 +707,6 @@
 
     // ===== State =====
     let historyExpanded = false;
-    let currentBatchIdx = 0;
 
     // ===== Compute Date Cutoff =====
     const cutoffDate = new Date();
@@ -703,173 +779,146 @@
         '\u5171 ' + DASHBOARD_DATA.batches.length + ' \u6279\u6B21 \00B7 \u6700\u540E\u66F4\u65B0 ' + DASHBOARD_DATA.lastUpdated;
     }
 
-    // ===== Render Batch Filter (grouped by date, 10-day limit) =====
-    function renderBatchFilter() {
-      var container = document.getElementById('batchFilter');
+    // ===== Chevron SVG =====
+    function chevronSvg() {
+      return '<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+    }
+
+    // ===== Build a single content card element =====
+    function buildCard(item, batch, idx) {
+      var card = document.createElement('div');
+      card.className = 'content-card';
+      var itemCopied = isCopied(item.id);
+      if (itemCopied) {
+        card.classList.add('copied');
+      }
+
+      var badgeHtml = itemCopied ? '<span class="copied-badge">\u5DF2\u590D\u5236</span>' : '';
+      var copyBtnClass = itemCopied ? 'copy-btn copied' : 'copy-btn';
+      var copyBtnText = itemCopied ? '\u5DF2\u590D\u5236' : '\u590D\u5236';
+
+      var heatHtml = (item.heat && /[0-9]/.test(String(item.heat)))
+        ? '<span class="tag tag-heat">\uD83D\uDD25 ' + escapeHtml(item.heat) + '</span>' : '';
+
+      card.innerHTML = badgeHtml + '\n          <div class="card-header">\n            <div class="card-tags">\n              <span class="tag tag-category">' + escapeHtml(item.category) + '</span>\n              <span class="tag tag-source">' + escapeHtml(item.source) + '</span>\n              ' + heatHtml + '\n            </div>\n            <span class="card-num">#' + String(idx + 1).padStart(2, '0') + '</span>\n          </div>\n          <div class="card-body collapsed">' + escapeHtml(item.content) + '</div>\n          <div class="card-footer">\n            <span class="card-time">\u7B2C' + batch.batch + '\u6279 \00B7 ' + batch.time + ' \00B7 ' + escapeHtml(item.topic) + '</span>\n            <button class="' + copyBtnClass + '" data-id="' + item.id + '" ' + (itemCopied ? 'disabled' : '') + '>\n              <svg class="copy-icon" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>\n              <span>' + copyBtnText + '</span>\n            </button>\n          </div>';
+
+      // Bind copy
+      var copyBtn = card.querySelector('.copy-btn:not(.copied)');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', function() {
+          copyToClipboard(item.content);
+          markCopied(item.id);
+          copyBtn.classList.add('copied');
+          copyBtn.querySelector('span').textContent = '\u5DF2\u590D\u5236';
+          copyBtn.disabled = true;
+          card.classList.add('copied');
+          var bodyEl = card.querySelector('.card-body');
+          if (bodyEl) bodyEl.classList.add('collapsed');
+          if (!card.querySelector('.copied-badge')) {
+            var badge = document.createElement('span');
+            badge.className = 'copied-badge';
+            badge.textContent = '\u5DF2\u590D\u5236';
+            card.insertBefore(badge, card.firstChild);
+          }
+          showToast('\u5DF2\u590D\u5236\u5230\u526A\u8D34\u677F');
+        });
+      }
+
+      // Tap body to expand / re-collapse
+      var bodyEl = card.querySelector('.card-body');
+      if (bodyEl) {
+        bodyEl.addEventListener('click', function() {
+          bodyEl.classList.toggle('collapsed');
+        });
+      }
+
+      return card;
+    }
+
+    // ===== Render Three-level Accordion (日期 → 批次 → 内容) =====
+    function renderAccordion() {
+      var container = document.getElementById('accordion');
       container.innerHTML = '';
 
       var visibleBatches = getVisibleBatches();
       if (visibleBatches.length === 0) {
-        container.innerHTML = '<div style="text-align:center;padding:20px;color:#adb5bd;font-size:0.85rem;">暂无内容，等待自动化生成</div>';
+        container.innerHTML = '<div class="empty-state"><div class="icon">\uD83D\uDCEC</div><div class="text">\u6682\u65E0\u5185\u5BB9\uff0c\u7B49\u5F85\u81EA\u52A8\u751F\u6210</div></div>';
         return;
       }
 
-      // Group visible batches by date
+      // Group by date
       var dateGroups = {};
       visibleBatches.forEach(function(batch) {
         if (!dateGroups[batch.date]) dateGroups[batch.date] = [];
         dateGroups[batch.date].push(batch);
       });
-
-      // Sort dates descending
       var sortedDates = Object.keys(dateGroups).sort().reverse();
 
-      // Build flat index map for each batch
-      var batchIndexMap = {};
-      visibleBatches.forEach(function(batch, idx) {
-        batchIndexMap[batch.date + '_' + batch.batch] = idx;
-      });
-
-      // Render date groups
       sortedDates.forEach(function(date) {
-        var group = document.createElement('div');
-        group.className = 'date-group';
+        var dateBlock = document.createElement('div');
+        dateBlock.className = 'acc-date';
 
-        var header = document.createElement('div');
-        header.className = 'date-group-header';
-        header.textContent = formatDate(date);
-        group.appendChild(header);
+        var batches = dateGroups[date].slice().sort(function(a, b) { return a.batch - b.batch; });
+        var totalItems = batches.reduce(function(s, b) { return s + (b.items ? b.items.length : 0); }, 0);
 
-        var btnsWrap = document.createElement('div');
-        btnsWrap.className = 'date-group-btns';
+        var dateHead = document.createElement('div');
+        dateHead.className = 'acc-date-head';
+        dateHead.innerHTML = '<div class="meta"><span>' + formatDate(date) + '</span><span class="count">' + batches.length + '\u6279 \00B7 ' + totalItems + '\u6761</span></div>' + chevronSvg();
+        dateBlock.appendChild(dateHead);
 
-        dateGroups[date].forEach(function(batch) {
-          var idx = batchIndexMap[batch.date + '_' + batch.batch];
-          var btn = document.createElement('button');
-          btn.className = 'batch-btn';
-          if (idx === currentBatchIdx && currentBatchIdx < visibleBatches.length) {
-            btn.classList.add('active');
-          }
-          btn.textContent = '\u7B2C' + batch.batch + '\u6279 ' + batch.time;
-          btn.addEventListener('click', (function(i) {
-            return function() {
-              currentBatchIdx = i;
-              renderBatchFilter();
-              renderContentList(i);
-            };
-          })(idx));
-          btnsWrap.appendChild(btn);
+        var dateBody = document.createElement('div');
+        dateBody.className = 'acc-date-body';
+
+        batches.forEach(function(batch) {
+          var batchBlock = document.createElement('div');
+          batchBlock.className = 'acc-batch';
+
+          var batchHead = document.createElement('div');
+          batchHead.className = 'acc-batch-head';
+          batchHead.innerHTML = '<div class="meta"><span>\u7B2C' + batch.batch + '\u6279 ' + batch.time + '</span><span class="count">' + (batch.items ? batch.items.length : 0) + '\u6761</span></div>' + chevronSvg();
+          batchBlock.appendChild(batchHead);
+
+          var batchBody = document.createElement('div');
+          batchBody.className = 'acc-batch-body';
+          (batch.items || []).forEach(function(item, idx) {
+            batchBody.appendChild(buildCard(item, batch, idx));
+          });
+          batchBlock.appendChild(batchBody);
+
+          batchHead.addEventListener('click', function() {
+            batchBlock.classList.toggle('open');
+          });
+
+          dateBody.appendChild(batchBlock);
         });
 
-        group.appendChild(btnsWrap);
-        container.appendChild(group);
+        dateBlock.appendChild(dateBody);
+        container.appendChild(dateBlock);
+
+        dateHead.addEventListener('click', function() {
+          dateBlock.classList.toggle('open');
+        });
       });
 
       // History toggle
       if (historyBatches.length > 0 || historyExpanded) {
         var toggleWrap = document.createElement('div');
         toggleWrap.className = 'history-toggle-wrap';
-
         var toggleBtn = document.createElement('button');
         toggleBtn.className = 'history-toggle';
-        if (historyExpanded) {
-          toggleBtn.textContent = '\u2591 \u6536\u8D77\u5386\u53F2\u5185\u5BB9 \u2591';
-        } else {
-          toggleBtn.textContent = '\u25BC \u5C55\u5F00\u5386\u53F2\u5185\u5BB9 (' + historyBatches.length + '\u6279)';
-        }
+        toggleBtn.textContent = historyExpanded
+          ? '\u2591 \u6536\u8D77\u5386\u53F2\u5185\u5BB9 \u2591'
+          : '\u25BC \u5C55\u5F00\u5386\u53F2\u5185\u5BB9 (' + historyBatches.length + '\u6279)';
         toggleBtn.addEventListener('click', function() {
           historyExpanded = !historyExpanded;
-          currentBatchIdx = 0;
-          renderBatchFilter();
-          renderContentList(0);
+          renderAccordion();
         });
         toggleWrap.appendChild(toggleBtn);
         container.appendChild(toggleWrap);
       }
     }
 
-    // ===== Render Content List =====
-    function renderContentList(batchIdx) {
-      var container = document.getElementById('contentList');
-      var visibleBatches = getVisibleBatches();
-      var batch = visibleBatches[batchIdx];
-
-      container.innerHTML = '';
-
-      if (!batch || !batch.items || batch.items.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="icon">\uD83D\uDCDD</div><div class="text">\u672C\u6279\u6B21\u6682\u65E0\u5185\u5BB9<br>\u8BF7\u7B49\u5F85\u81EA\u52A8\u5316\u751F\u6210</div></div>';
-        return;
-      }
-
-      // Date header
-      var dateDiv = document.createElement('div');
-      dateDiv.style.cssText = 'text-align:center;padding:4px 0 12px;font-size:0.75rem;color:#adb5bd;font-weight:500;';
-      dateDiv.textContent = formatDate(batch.date);
-      container.appendChild(dateDiv);
-
-      // Render each item
-      batch.items.forEach(function(item, idx) {
-        var card = document.createElement('div');
-        card.className = 'content-card';
-        var itemCopied = isCopied(item.id);
-        if (itemCopied) {
-          card.classList.add('copied');
-        }
-
-        var badgeHtml = itemCopied ? '<span class="copied-badge">\u5DF2\u590D\u5236</span>' : '';
-        var copyBtnClass = itemCopied ? 'copy-btn copied' : 'copy-btn';
-        var copyBtnText = itemCopied ? '\u5DF2\u590D\u5236' : '\u590D\u5236';
-
-        // Heat badge: only show when item.heat contains a real numeric value (filters "热度未知"/missing)
-        var heatHtml = (item.heat && /[0-9]/.test(String(item.heat)))
-          ? '<span class="tag tag-heat">\uD83D\uDD25 ' + escapeHtml(item.heat) + '</span>' : '';
-
-        card.innerHTML = badgeHtml + '\n          <div class="card-header">\n            <div class="card-tags">\n              <span class="tag tag-category">' + escapeHtml(item.category) + '</span>\n              <span class="tag tag-source">' + escapeHtml(item.source) + '</span>\n              ' + heatHtml + '\n            </div>\n            <span class="card-num">#' + String(idx + 1).padStart(2, '0') + '</span>\n          </div>\n          <div class="card-body' + (itemCopied ? ' collapsed' : '') + '">' + escapeHtml(item.content) + '</div>\n          <div class="card-footer">\n            <span class="card-time">\u7B2C' + batch.batch + '\u6279 \00B7 ' + batch.time + ' \00B7 ' + escapeHtml(item.topic) + '</span>\n            <button class="' + copyBtnClass + '" data-id="' + item.id + '" ' + (itemCopied ? 'disabled' : '') + '>\n              <svg class="copy-icon" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>\n              <span>' + copyBtnText + '</span>\n            </button>\n          </div>';
-
-        container.appendChild(card);
-      });
-
-      // Bind copy buttons
-      container.querySelectorAll('.copy-btn:not(.copied)').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          var id = parseInt(btn.dataset.id);
-          var item = batch.items.find(function(i) { return i.id === id; });
-          if (item) {
-            copyToClipboard(item.content);
-            markCopied(id);
-
-            // Update button
-            btn.classList.add('copied');
-            btn.querySelector('span').textContent = '\u5DF2\u590D\u5236';
-            btn.disabled = true;
-
-            // Update card
-            var card = btn.closest('.content-card');
-            if (card) {
-              card.classList.add('copied');
-              var bodyEl = card.querySelector('.card-body');
-              if (bodyEl) bodyEl.classList.add('collapsed');
-              // Check if badge already exists
-              if (!card.querySelector('.copied-badge')) {
-                var badge = document.createElement('span');
-                badge.className = 'copied-badge';
-                badge.textContent = '\u5DF2\u590D\u5236';
-                card.insertBefore(badge, card.firstChild);
-              }
-            }
-
-            showToast('\u5DF2\u590D\u5236\u5230\u526A\u8D34\u677F');
-          }
-        });
-      });
-
-      // Tap collapsed body to expand / re-collapse
-      container.querySelectorAll('.card-body').forEach(function(body) {
-        body.addEventListener('click', function() {
-          body.classList.toggle('collapsed');
-        });
-      });
-    }
+    // (内容卡片现由 renderAccordion 通过 buildCard 渲染)
 
     // ===== Render Hot Topics =====
     function renderTopics() {
@@ -927,8 +976,7 @@
 
     // ===== Init =====
     renderHeader();
-    renderBatchFilter();
-    renderContentList(0);
+    renderAccordion();
     renderTopics();
     renderStyle();
   </script>
