@@ -824,11 +824,19 @@
         });
       }
 
-      // Tap body to expand / re-collapse
+      // Tap body to expand / re-collapse (单展开：展开一张时其余全部收起)
       var bodyEl = card.querySelector('.card-body');
       if (bodyEl) {
         bodyEl.addEventListener('click', function() {
-          bodyEl.classList.toggle('collapsed');
+          var willExpand = bodyEl.classList.contains('collapsed');
+          if (willExpand) {
+            document.querySelectorAll('#accordion .card-body').forEach(function(other) {
+              if (other !== bodyEl) other.classList.add('collapsed');
+            });
+            bodyEl.classList.remove('collapsed');
+          } else {
+            bodyEl.classList.add('collapsed');
+          }
         });
       }
 
@@ -860,10 +868,13 @@
 
         var batches = dateGroups[date].slice().sort(function(a, b) { return a.batch - b.batch; });
         var totalItems = batches.reduce(function(s, b) { return s + (b.items ? b.items.length : 0); }, 0);
+        var remainingItems = batches.reduce(function(s, b) {
+          return s + (b.items || []).filter(function(it) { return !isCopied(it.id); }).length;
+        }, 0);
 
         var dateHead = document.createElement('div');
         dateHead.className = 'acc-date-head';
-        dateHead.innerHTML = '<div class="meta"><span>' + formatDate(date) + '</span><span class="count">' + batches.length + '\u6279 \00B7 ' + totalItems + '\u6761</span></div>' + chevronSvg();
+        dateHead.innerHTML = '<div class="meta"><span>' + formatDate(date) + '</span><span class="count">' + batches.length + '\u6279 \00B7 ' + totalItems + '\u6761 \00B7 \u5269' + remainingItems + '\u6761</span></div>' + chevronSvg();
         dateBlock.appendChild(dateHead);
 
         var dateBody = document.createElement('div');
@@ -886,7 +897,12 @@
           batchBlock.appendChild(batchBody);
 
           batchHead.addEventListener('click', function() {
+            var opening = !batchBlock.classList.contains('open');
             batchBlock.classList.toggle('open');
+            // 展开批次时，其下所有卡片重置为折叠（点上级菜单→内容卡片收起）
+            if (opening) {
+              batchBlock.querySelectorAll('.card-body').forEach(function(b) { b.classList.add('collapsed'); });
+            }
           });
 
           dateBody.appendChild(batchBlock);
@@ -896,7 +912,12 @@
         container.appendChild(dateBlock);
 
         dateHead.addEventListener('click', function() {
+          var opening = !dateBlock.classList.contains('open');
           dateBlock.classList.toggle('open');
+          // 展开日期时，其下所有卡片重置为折叠（点上级菜单→内容卡片收起）
+          if (opening) {
+            dateBlock.querySelectorAll('.card-body').forEach(function(b) { b.classList.add('collapsed'); });
+          }
         });
       });
 
