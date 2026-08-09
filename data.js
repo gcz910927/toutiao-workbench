@@ -1503,7 +1503,7 @@ const DASHBOARD_DATA = {
           topic: "全明星刺激之夜吃鸡行为大赏",
           source: "抖音热点",
           category: "娱乐热点",
-          heat: "911.0万",
+          heat: "911万",
           content: `一群平时端着架子的明星，打游戏能有多拼？
 
 这两天全网都在刷"全明星刺激之夜吃鸡行为大赏"，真的把我笑晕了。平时在镜头前高冷得不行的艺人，一到游戏里全现原形——有人蹲草丛一蹲就是十分钟，愣是把吃鸡玩成了"吃草模拟器"；有人被队友误伤后直接公屏语音输出，那语速比背台词还快。
@@ -1586,12 +1586,12 @@ const DASHBOARD_DATA = {
   ],
 
   hotTopics: [
-    { rank: 1, topic: "全明星刺激之夜吃鸡行为大赏", source: "抖音热点", heat: "911.0万" },
+    { rank: 1, topic: "全明星刺激之夜吃鸡行为大赏", source: "抖音热点", heat: "911万" },
     { rank: 2, topic: "谢霆锋沈阳演唱会", source: "抖音热点", heat: "784.2万" },
     { rank: 3, topic: "C罗用笑哭表情回应婚礼乌龙", source: "抖音热点", heat: "776.8万" },
     { rank: 4, topic: "叫号取餐选秀大会", source: "抖音热点", heat: "773.8万" },
     { rank: 5, topic: "披荆斩棘官宣完整嘉宾阵容", source: "抖音热点", heat: "768.4万" },
-    { rank: 6, topic: "李荣浩大连演唱会", source: "抖音热点", heat: "768.0万" },
+    { rank: 6, topic: "李荣浩大连演唱会", source: "抖音热点", heat: "768万" },
     { rank: 7, topic: "千名武警观看电影功夫女足", source: "抖音热点", heat: "767.1万" },
     { rank: 8, topic: "刺激之夜抖音直播", source: "抖音热点", heat: "767.1万" }
   ],
