@@ -2,7 +2,7 @@
 // 最后更新：2026-08-08 14:00 第3批
 
 const DASHBOARD_DATA = {
-  lastUpdated: "2026-08-17 17:00 第4批",
+  lastUpdated: "2026-08-17 19:00 第5批",
   totalToday: 9,
   totalAll: 195,
 
@@ -4156,6 +4156,14 @@ BLG刚刚正式官宣他加入，热度直接飙到50多万。说实话，这消
     {
       batch: 4,
       time: "17:00",
+      date: "2026-08-17",
+      items: [
+
+      ]
+    },
+    {
+      batch: 5,
+      time: "19:00",
       date: "2026-08-17",
       items: [
 
