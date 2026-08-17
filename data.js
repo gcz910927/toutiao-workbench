@@ -2,8 +2,8 @@
 // 最后更新：2026-08-08 14:00 第3批
 
 const DASHBOARD_DATA = {
-  lastUpdated: "2026-08-17 21:00 第6批",
-  totalToday: 9,
+  lastUpdated: "2026-08-18 08:00 第1批",
+  totalToday: 0,
   totalAll: 195,
 
   batches: [
@@ -4177,17 +4177,25 @@ BLG刚刚正式官宣他加入，热度直接飙到50多万。说实话，这消
 
       ]
     },
+    {
+      batch: 1,
+      time: "08:00",
+      date: "2026-08-18",
+      items: [
+
+      ]
+    },
   ],
 
   hotTopics: [
-    { rank: 1, topic: "张柏芝请粉丝去香港迪士尼玩", source: "今日头条热榜", heat: "17.4万" },
-    { rank: 2, topic: "王菲俩女儿罕见同框", source: "百度热搜", heat: "实时热榜" },
-    { rank: 3, topic: "于东来回应胖东来再招刑释人员", source: "抖音热点", heat: "1105.2万" },
-    { rank: 4, topic: "马嘉祺公司回应冒名下架视频", source: "微博热搜", heat: "31.5万" },
-    { rank: 5, topic: "马库斯回应因搜集日军侵华罪证背债务", source: "今日头条热榜", heat: "23.4万" },
-    { rank: 6, topic: "大衣哥朱之文回应“种地不辛苦”言论", source: "今日头条热榜", heat: "14.2万" },
-    { rank: 7, topic: "是否支持美朝恢复对话？中方回应", source: "百度热搜", heat: "实时热榜" },
-    { rank: 8, topic: "演员海顿潘妮蒂尔去世", source: "百度热搜", heat: "实时热榜" }
+    { rank: 1, topic: "张艺谋电影 肖战", source: "微博热搜", heat: "4.5万" },
+    { rank: 2, topic: "中方回应上百中国公民在巴基斯坦被拘", source: "今日头条热榜", heat: "1039.1万" },
+    { rank: 3, topic: "蓝盈莹承认新恋情", source: "今日头条热榜", heat: "345.9万" },
+    { rank: 4, topic: "全国多地已官宣秋假时间", source: "今日头条热榜", heat: "85.3万" },
+    { rank: 5, topic: "多方回应女子杭州酒局遭伤害", source: "微博热搜", heat: "8.7万" },
+    { rank: 6, topic: "结婚后才明白的事", source: "微博热搜", heat: "4.3万" },
+    { rank: 7, topic: "桃黑黑回应控诉", source: "微博热搜", heat: "4.3万" },
+    { rank: 8, topic: "3孩非亲生案女方当庭承认出轨", source: "微博热搜", heat: "4.3万" }
   ],
 
   styleProfile: {
