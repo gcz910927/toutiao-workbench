@@ -2,7 +2,7 @@
 // 最后更新：2026-08-08 14:00 第3批
 
 const DASHBOARD_DATA = {
-  lastUpdated: "2026-08-27 16:00 第4批",
+  lastUpdated: "2026-08-27 19:00 第5批",
   totalToday: 9,
   totalAll: 365,
 
@@ -7089,6 +7089,14 @@ Kimi早公开说不碰娱乐圈，连合照都躲镜头，而Jenson哼着韩团�
     {
       batch: 4,
       time: "16:00",
+      date: "2026-08-27",
+      items: [
+
+      ]
+    },
+    {
+      batch: 5,
+      time: "19:00",
       date: "2026-08-27",
       items: [
 
