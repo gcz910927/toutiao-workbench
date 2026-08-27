@@ -2,7 +2,7 @@
 // 最后更新：2026-08-08 14:00 第3批
 
 const DASHBOARD_DATA = {
-  lastUpdated: "2026-08-27 14:00 第3批",
+  lastUpdated: "2026-08-27 16:00 第4批",
   totalToday: 9,
   totalAll: 365,
 
@@ -7086,17 +7086,25 @@ Kimi早公开说不碰娱乐圈，连合照都躲镜头，而Jenson哼着韩团�
         }
       ]
     },
+    {
+      batch: 4,
+      time: "16:00",
+      date: "2026-08-27",
+      items: [
+
+      ]
+    },
   ],
 
   hotTopics: [
-    { rank: 1, topic: "张婧仪穿轻纱抹胸裙飘逸灵动 神女仙气十足", source: "网易娱乐", heat: "娱乐热点" },
-    { rank: 2, topic: "程潇穿白色纱裙气质清冷神秘 好似神女降临", source: "网易娱乐", heat: "娱乐热点" },
-    { rank: 3, topic: "鞠婧祎化身古装少女 手捧大粽子俏皮可爱", source: "网易娱乐", heat: "娱乐热点" },
-    { rank: 4, topic: "刘浩存穿黑丝绒长裙贵气十足 自信又优雅", source: "网易娱乐", heat: "娱乐热点" },
-    { rank: 5, topic: "关晓彤化身青鸟神女 漫步花海仙气十足", source: "网易娱乐", heat: "娱乐热点" },
-    { rank: 6, topic: "华晨宇火星演唱会四面台收官 与歌迷庆生透露2.0", source: "新浪音乐", heat: "娱乐热点" },
-    { rank: 7, topic: "华晨宇重返海口圆梦初心 环环舞台谢幕启航新征程", source: "新浪音乐", heat: "娱乐热点" },
-    { rank: 8, topic: "华晨宇火星乐园演唱会贵阳开唱 尽享户外音乐狂欢", source: "新浪音乐", heat: "娱乐热点" }
+    { rank: 1, topic: "杨幂穿吊带裙超有女神范儿 魅力十足", source: "网易娱乐", heat: "娱乐热点" },
+    { rank: 2, topic: "张婧仪穿轻纱抹胸裙飘逸灵动 神女仙气十足", source: "网易娱乐", heat: "娱乐热点" },
+    { rank: 3, topic: "程潇穿白色纱裙气质清冷神秘 好似神女降临", source: "网易娱乐", heat: "娱乐热点" },
+    { rank: 4, topic: "鞠婧祎化身古装少女 手捧大粽子俏皮可爱", source: "网易娱乐", heat: "娱乐热点" },
+    { rank: 5, topic: "刘浩存穿黑丝绒长裙贵气十足 自信又优雅", source: "网易娱乐", heat: "娱乐热点" },
+    { rank: 6, topic: "关晓彤化身青鸟神女 漫步花海仙气十足", source: "网易娱乐", heat: "娱乐热点" },
+    { rank: 7, topic: "华晨宇火星演唱会四面台收官 与歌迷庆生透露2.0", source: "新浪音乐", heat: "娱乐热点" },
+    { rank: 8, topic: "华晨宇重返海口圆梦初心 环环舞台谢幕启航新征程", source: "新浪音乐", heat: "娱乐热点" }
   ],
 
   styleProfile: {
