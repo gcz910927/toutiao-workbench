@@ -2,7 +2,7 @@
 // 最后更新：2026-08-08 14:00 第3批
 
 const DASHBOARD_DATA = {
-  lastUpdated: "2026-08-29 15:00 看门狗补齐",
+  lastUpdated: "2026-08-29 16:00 第4批",
   totalToday: 9,
   totalAll: 401,
 
@@ -7734,10 +7734,18 @@ Ella从没否认自己爱讲道理、敢摔话筒、扛设备搬箱子，她只�
         }
       ]
     },
+    {
+      batch: 4,
+      time: "16:00",
+      date: "2026-08-29",
+      items: [
+
+      ]
+    },
   ],
 
   hotTopics: [
-    { rank: 1, topic: "杨超越穿碎钻长裙配披肩 造型仙气古典", source: "网易娱乐", heat: "娱乐热点" },
+    { rank: 1, topic: "虞书欣大片曝光！穿绯红长裙极具异域风情", source: "网易娱乐", heat: "娱乐热点" },
     { rank: 2, topic: "张婧仪穿轻纱抹胸裙飘逸灵动 神女仙气十足", source: "网易娱乐", heat: "娱乐热点" },
     { rank: 3, topic: "程潇穿白色纱裙气质清冷神秘 好似神女降临", source: "网易娱乐", heat: "娱乐热点" },
     { rank: 4, topic: "鞠婧祎化身古装少女 手捧大粽子俏皮可爱", source: "网易娱乐", heat: "娱乐热点" },
