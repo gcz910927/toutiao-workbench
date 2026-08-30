@@ -2,7 +2,7 @@
 // 最后更新：2026-08-08 14:00 第3批
 
 const DASHBOARD_DATA = {
-  lastUpdated: "2026-08-30 07:00 第1批",
+  lastUpdated: "2026-08-30 11:00 第2批",
   totalToday: 0,
   totalAll: 410,
 
@@ -7875,6 +7875,14 @@ Ella从没否认自己爱讲道理、敢摔话筒、扛设备搬箱子，她只�
     {
       batch: 1,
       time: "07:00",
+      date: "2026-08-30",
+      items: [
+
+      ]
+    },
+    {
+      batch: 2,
+      time: "11:00",
       date: "2026-08-30",
       items: [
 
