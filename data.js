@@ -2,7 +2,7 @@
 // 最后更新：2026-08-08 14:00 第3批
 
 const DASHBOARD_DATA = {
-  lastUpdated: "2026-08-30 15:00 看门狗补齐",
+  lastUpdated: "2026-08-30 16:00 第4批",
   totalToday: 9,
   totalAll: 419,
 
@@ -8014,10 +8014,18 @@ DC这几年电影扑得够呛，转头在流媒体剧集上找补，这步棋挺
         }
       ]
     },
+    {
+      batch: 4,
+      time: "16:00",
+      date: "2026-08-30",
+      items: [
+
+      ]
+    },
   ],
 
   hotTopics: [
-    { rank: 1, topic: "虞书欣大片曝光！穿绯红长裙极具异域风情", source: "网易娱乐", heat: "娱乐热点" },
+    { rank: 1, topic: "王楚然穿蓝色抹胸裙 化身幽蓝花仙美丽动人", source: "网易娱乐", heat: "娱乐热点" },
     { rank: 2, topic: "张婧仪穿轻纱抹胸裙飘逸灵动 神女仙气十足", source: "网易娱乐", heat: "娱乐热点" },
     { rank: 3, topic: "程潇穿白色纱裙气质清冷神秘 好似神女降临", source: "网易娱乐", heat: "娱乐热点" },
     { rank: 4, topic: "鞠婧祎化身古装少女 手捧大粽子俏皮可爱", source: "网易娱乐", heat: "娱乐热点" },
