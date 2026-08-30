@@ -2,7 +2,7 @@
 // 最后更新：2026-08-08 14:00 第3批
 
 const DASHBOARD_DATA = {
-  lastUpdated: "2026-08-30 16:00 第4批",
+  lastUpdated: "2026-08-30 19:00 第5批",
   totalToday: 9,
   totalAll: 419,
 
@@ -8017,6 +8017,14 @@ DC这几年电影扑得够呛，转头在流媒体剧集上找补，这步棋挺
     {
       batch: 4,
       time: "16:00",
+      date: "2026-08-30",
+      items: [
+
+      ]
+    },
+    {
+      batch: 5,
+      time: "19:00",
       date: "2026-08-30",
       items: [
 
