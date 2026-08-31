@@ -611,6 +611,18 @@
       outline: none; transition: border-color 0.2s;
     }
     .topic-input:focus { border-color: #e63946; }
+    .custom-label {
+      display: block;
+      margin: 12px 2px 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #495057;
+    }
+    .controversy-input {
+      min-height: 64px;
+      background: #fffaf6;
+      border-color: #ffd9c2;
+    }
     .custom-actions { display: flex; gap: 10px; margin-top: 12px; }
     .btn-primary {
       flex: 1; background: #e63946; color: #fff; border: none; border-radius: 10px;
@@ -753,6 +765,8 @@
       <div class="custom-title">📝 自定义选题</div>
       <p class="custom-hint">输入你找到的新闻热点，多个话题用 <b>/</b> 分隔。提交后 AI 会自动查新闻并生成微头条，约 10–15 分钟后在「今日内容」查看。</p>
       <textarea id="topicInput" class="topic-input" placeholder="例如：某明星官宣离婚 / 综艺节目爆冷出圈 / 影视剧OST翻红"></textarea>
+      <label class="custom-label" for="controversyInput">网友争议点（可选）</label>
+      <textarea id="controversyInput" class="topic-input controversy-input" placeholder="你看到的网友吵架点 / 分歧点，如：有人觉得她作秀，有人觉得是真性情。写了就按这个点切入写。"></textarea>
       <div class="custom-actions">
         <button id="submitTopic" class="btn-primary">发送</button>
         <button id="clearTopic" class="btn-ghost">清空</button>
@@ -1121,8 +1135,10 @@
         var st = t.status || 'pending';
         var label = st === 'done' ? '已完成 ✓' : (st === 'failed' ? '失败' : '处理中…');
         var topics = (t.topics || []).join(' / ');
+        var extra = t.controversy ? '<div class="t-extra">争议点：' + escapeHtml(t.controversy) + '</div>' : '';
         return '<div class="task-item">' +
           '<div class="t-topics">' + escapeHtml(topics) + '</div>' +
+          extra +
           '<div class="t-meta"><span>' + (t.created_at || '') + '</span>' +
           '<span class="task-status ' + st + '">' + label + '</span></div>' +
           '</div>';
@@ -1160,8 +1176,9 @@
       if (!topics.length) { showSubmit('未解析到有效话题', 'err'); return; }
 
       var id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      var controversy = (document.getElementById('controversyInput').value || '').trim();
       var payload = {
-        id: id, raw: raw, topics: topics, status: 'pending',
+        id: id, raw: raw, topics: topics, controversy: controversy, status: 'pending',
         created_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
         source: 'web', generated_at: null, result_count: 0
       };
@@ -1177,6 +1194,7 @@
             saveTasks(tasks);
             renderTasks();
             document.getElementById('topicInput').value = '';
+            document.getElementById('controversyInput').value = '';
           } else {
             showSubmit('提交失败：' + (res.data.message || res.status), 'err');
           }
