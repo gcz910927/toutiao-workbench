@@ -764,6 +764,7 @@
         <p class="custom-hint">用于把选题写入仓库任务队列。请使用<strong>仅对该公开仓库有 Contents:write 权限</strong>的 fine-grained PAT。令牌仅保存在本浏览器，不会上传。</p>
         <input id="ghToken" class="token-input" type="password" placeholder="ghp_... 或 github_pat_..." />
         <button id="saveToken" class="btn-ghost">保存令牌</button>
+        <button id="testToken" class="btn-ghost">测试连接</button>
         <span id="tokenStatus" class="token-status"></span>
       </details>
 
@@ -1193,6 +1194,19 @@
       if (!v) { document.getElementById('tokenStatus').textContent = '请输入令牌'; return; }
       localStorage.setItem(TOKEN_KEY, v);
       document.getElementById('tokenStatus').textContent = '已保存 ✓';
+    });
+    document.getElementById('testToken').addEventListener('click', function () {
+      var v = document.getElementById('ghToken').value.trim();
+      if (!v) { document.getElementById('tokenStatus').textContent = '请先输入令牌再测试'; return; }
+      document.getElementById('tokenStatus').textContent = '测试中…';
+      ghApi('/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/tasks', 'GET', v)
+        .then(function (res) {
+          if (res.ok) { document.getElementById('tokenStatus').textContent = '✅ 连接成功，可写入任务队列'; }
+          else if (res.status === 401) { document.getElementById('tokenStatus').textContent = '❌ 令牌无效或无权限(401)'; }
+          else if (res.status === 403) { document.getElementById('tokenStatus').textContent = '❌ 权限不足(403)：需 Contents:write'; }
+          else { document.getElementById('tokenStatus').textContent = '❌ 失败：' + (res.data.message || res.status); }
+        })
+        .catch(function () { document.getElementById('tokenStatus').textContent = '❌ 网络/跨域错误'; });
     });
 
     // 进入自定义选题 Tab 时尝试刷新状态
