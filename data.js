@@ -2,7 +2,7 @@
 // 最后更新：2026-08-08 14:00 第3批
 
 const DASHBOARD_DATA = {
-  lastUpdated: "2026-08-31 11:00 第2批",
+  lastUpdated: "2026-08-31 14:00 第3批",
   totalToday: 0,
   totalAll: 428,
 
@@ -8181,6 +8181,14 @@ GNZ48郑丹妮，连续三年把分团第一收入囊中。
     {
       batch: 2,
       time: "11:00",
+      date: "2026-08-31",
+      items: [
+
+      ]
+    },
+    {
+      batch: 3,
+      time: "14:00",
       date: "2026-08-31",
       items: [
 
