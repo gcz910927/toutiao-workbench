@@ -598,6 +598,56 @@
       font-size: 0.75rem;
       color: #adb5bd;
     }
+
+    /* ===== 自定义选题 Tab ===== */
+    .custom-box { padding: 14px 14px 24px; }
+    .custom-title { font-size: 1.05rem; font-weight: 700; color: #212529; margin-bottom: 8px; }
+    .custom-hint { font-size: 0.8rem; color: #6c757d; line-height: 1.6; margin-bottom: 12px; }
+    .custom-hint b { color: #e63946; }
+    .topic-input {
+      width: 100%; box-sizing: border-box; min-height: 96px; resize: vertical;
+      border: 1px solid #dee2e6; border-radius: 12px; padding: 12px 14px;
+      font-size: 0.92rem; line-height: 1.5; font-family: inherit; color: #212529;
+      outline: none; transition: border-color 0.2s;
+    }
+    .topic-input:focus { border-color: #e63946; }
+    .custom-actions { display: flex; gap: 10px; margin-top: 12px; }
+    .btn-primary {
+      flex: 1; background: #e63946; color: #fff; border: none; border-radius: 10px;
+      padding: 11px 0; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s;
+    }
+    .btn-primary:active { opacity: 0.85; }
+    .btn-ghost {
+      background: #f1f3f5; color: #495057; border: none; border-radius: 10px;
+      padding: 11px 18px; font-size: 0.9rem; cursor: pointer;
+    }
+    .btn-ghost:active { background: #e9ecef; }
+    .submit-status { font-size: 0.82rem; margin-top: 10px; min-height: 18px; }
+    .submit-status.ok { color: #2f9e44; }
+    .submit-status.err { color: #e03131; }
+    .settings {
+      margin-top: 18px; border: 1px solid #e9ecef; border-radius: 12px; padding: 10px 12px;
+      background: #fafafa;
+    }
+    .settings summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; color: #495057; }
+    .settings .custom-hint { margin: 10px 0 8px; }
+    .token-input {
+      width: 100%; box-sizing: border-box; border: 1px solid #dee2e6; border-radius: 8px;
+      padding: 9px 12px; font-size: 0.85rem; margin-bottom: 8px; outline: none;
+    }
+    .token-input:focus { border-color: #e63946; }
+    .token-status { font-size: 0.8rem; color: #2f9e44; margin-left: 8px; }
+    .submitted-title { font-size: 0.85rem; font-weight: 600; color: #495057; margin: 20px 0 10px; }
+    .task-list { display: flex; flex-direction: column; gap: 10px; }
+    .task-item {
+      border: 1px solid #e9ecef; border-radius: 12px; padding: 12px; background: #fff;
+    }
+    .task-item .t-topics { font-size: 0.88rem; color: #212529; line-height: 1.5; }
+    .task-item .t-meta { font-size: 0.72rem; color: #adb5bd; margin-top: 6px; display: flex; justify-content: space-between; }
+    .task-status { font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+    .task-status.pending { background: #fff3bf; color: #e8590c; }
+    .task-status.done { background: #d3f9d8; color: #2f9e44; }
+    .task-status.failed { background: #ffe3e3; color: #e03131; }
   </style>
 </head>
 <body>
@@ -695,6 +745,31 @@
   <!-- ===== 风格档案 ===== -->
   <div class="content-area" id="tab-style">
     <div id="styleProfile"></div>
+  </div>
+
+  <!-- ===== 自定义选题 ===== -->
+  <div class="content-area" id="tab-custom">
+    <div class="custom-box">
+      <div class="custom-title">📝 自定义选题</div>
+      <p class="custom-hint">输入你找到的新闻热点，多个话题用 <b>/</b> 分隔。提交后 AI 会自动查新闻并生成微头条，约 10–15 分钟后在「今日内容」查看。</p>
+      <textarea id="topicInput" class="topic-input" placeholder="例如：某明星官宣离婚 / 综艺节目爆冷出圈 / 影视剧OST翻红"></textarea>
+      <div class="custom-actions">
+        <button id="submitTopic" class="btn-primary">发送</button>
+        <button id="clearTopic" class="btn-ghost">清空</button>
+      </div>
+      <div id="submitStatus" class="submit-status"></div>
+
+      <details class="settings">
+        <summary>⚙️ GitHub 令牌设置（首次使用需填写）</summary>
+        <p class="custom-hint">用于把选题写入仓库任务队列。请使用<strong>仅对该公开仓库有 Contents:write 权限</strong>的 fine-grained PAT。令牌仅保存在本浏览器，不会上传。</p>
+        <input id="ghToken" class="token-input" type="password" placeholder="ghp_... 或 github_pat_..." />
+        <button id="saveToken" class="btn-ghost">保存令牌</button>
+        <span id="tokenStatus" class="token-status"></span>
+      </details>
+
+      <div class="submitted-title">已提交任务</div>
+      <div id="taskList" class="task-list"></div>
+    </div>
   </div>
 
   <!-- Toast -->
@@ -995,6 +1070,144 @@
       toast.classList.add('show');
       setTimeout(function() { toast.classList.remove('show'); }, 2000);
     }
+
+    // ===== 自定义选题（方案A：GitHub 当信箱）=====
+    const GH_OWNER = 'gcz910927';
+    const GH_REPO = 'toutiao-workbench';
+    const GH_API = 'https://api.github.com';
+    const TOKEN_KEY = 'gh_token';
+    const TASKS_KEY = 'submitted_tasks';
+
+    function getGhToken() { return localStorage.getItem(TOKEN_KEY) || ''; }
+    function getTasks() {
+      try { return JSON.parse(localStorage.getItem(TASKS_KEY)) || []; }
+      catch (e) { return []; }
+    }
+    function saveTasks(arr) { localStorage.setItem(TASKS_KEY, JSON.stringify(arr)); }
+
+    function ghApi(path, method, token, body) {
+      return fetch(GH_API + path, {
+        method: method,
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json',
+          'Accept': 'application/vnd.github+json'
+        },
+        body: body ? JSON.stringify(body) : undefined
+      }).then(function (r) {
+        return r.json().then(function (j) { return { ok: r.ok, status: r.status, data: j }; });
+      });
+    }
+
+    function b64encodeUtf8(str) {
+      return btoa(unescape(encodeURIComponent(str)));
+    }
+
+    function showSubmit(msg, type) {
+      var el = document.getElementById('submitStatus');
+      el.textContent = msg;
+      el.className = 'submit-status' + (type ? ' ' + type : '');
+    }
+
+    function renderTasks() {
+      var list = document.getElementById('taskList');
+      var tasks = getTasks();
+      if (!tasks.length) {
+        list.innerHTML = '<div style="font-size:0.8rem;color:#adb5bd;">还没有提交过选题。</div>';
+        return;
+      }
+      list.innerHTML = tasks.map(function (t) {
+        var st = t.status || 'pending';
+        var label = st === 'done' ? '已完成 ✓' : (st === 'failed' ? '失败' : '处理中…');
+        var topics = (t.topics || []).join(' / ');
+        return '<div class="task-item">' +
+          '<div class="t-topics">' + escapeHtml(topics) + '</div>' +
+          '<div class="t-meta"><span>' + (t.created_at || '') + '</span>' +
+          '<span class="task-status ' + st + '">' + label + '</span></div>' +
+          '</div>';
+      }).join('');
+    }
+
+    function refreshStatuses() {
+      var token = getGhToken();
+      var tasks = getTasks();
+      if (!token || !tasks.length) { renderTasks(); return; }
+      var pending = tasks.filter(function (t) { return (t.status || 'pending') !== 'done'; });
+      if (!pending.length) { renderTasks(); return; }
+      Promise.all(pending.map(function (t) {
+        return ghApi('/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/tasks/' + t.id + '.json', 'GET', token)
+          .then(function (res) {
+            if (!res.ok || !res.data.content) return;
+            try {
+              var data = JSON.parse(atob(res.data.content.replace(/\s/g, '')));
+              t.status = data.status || t.status;
+            } catch (e) {}
+          });
+      })).then(function () {
+        saveTasks(tasks);
+        renderTasks();
+      });
+    }
+
+    function submitTopic() {
+      var token = getGhToken();
+      if (!token) { showSubmit('请先在下方「GitHub 令牌设置」中填写令牌', 'err'); return; }
+      var raw = document.getElementById('topicInput').value.trim();
+      if (!raw) { showSubmit('请输入至少一个热点', 'err'); return; }
+      var topics = raw.split('/').map(function (s) { return s.trim(); }).filter(Boolean);
+      topics = topics.filter(function (t, i) { return topics.indexOf(t) === i; });
+      if (!topics.length) { showSubmit('未解析到有效话题', 'err'); return; }
+
+      var id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      var payload = {
+        id: id, raw: raw, topics: topics, status: 'pending',
+        created_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
+        source: 'web', generated_at: null, result_count: 0
+      };
+      var content = b64encodeUtf8(JSON.stringify(payload));
+      showSubmit('提交中…', '');
+      ghApi('/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/tasks/' + id + '.json', 'PUT', token,
+        { message: 'task: ' + topics.length + ' topics', content: content })
+        .then(function (res) {
+          if (res.ok) {
+            showSubmit('✅ 已提交 ' + topics.length + ' 个话题，约 10–15 分钟后在「今日内容」查看', 'ok');
+            var tasks = getTasks();
+            tasks.unshift(payload);
+            saveTasks(tasks);
+            renderTasks();
+            document.getElementById('topicInput').value = '';
+          } else {
+            showSubmit('提交失败：' + (res.data.message || res.status), 'err');
+          }
+        })
+        .catch(function () { showSubmit('提交出错（网络/跨域），请重试', 'err'); });
+    }
+
+    document.getElementById('submitTopic').addEventListener('click', submitTopic);
+    document.getElementById('clearTopic').addEventListener('click', function () {
+      document.getElementById('topicInput').value = '';
+      showSubmit('', '');
+    });
+    document.getElementById('saveToken').addEventListener('click', function () {
+      var v = document.getElementById('ghToken').value.trim();
+      if (!v) { document.getElementById('tokenStatus').textContent = '请输入令牌'; return; }
+      localStorage.setItem(TOKEN_KEY, v);
+      document.getElementById('tokenStatus').textContent = '已保存 ✓';
+    });
+
+    // 进入自定义选题 Tab 时尝试刷新状态
+    document.querySelectorAll('.tab-item').forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        if (tab.dataset.tab === 'custom') { renderTasks(); refreshStatuses(); }
+      });
+    });
+
+    // 初始化：回填令牌 + 渲染已提交列表
+    (function initCustom() {
+      var saved = getGhToken();
+      if (saved) document.getElementById('ghToken').value = saved;
+      renderTasks();
+    })();
 
     // ===== Init =====
     renderHeader();
