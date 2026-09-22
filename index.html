@@ -655,6 +655,7 @@
       border: 1px solid #e9ecef; border-radius: 12px; padding: 12px; background: #fff;
     }
     .task-item .t-topics { font-size: 0.88rem; color: #212529; line-height: 1.5; }
+    .t-contro { color: #e8590c; font-size: 0.78rem; }
     .task-item .t-meta { font-size: 0.72rem; color: #adb5bd; margin-top: 6px; display: flex; justify-content: space-between; }
     .task-status { font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
     .task-status.pending { background: #fff3bf; color: #e8590c; }
@@ -1134,11 +1135,17 @@
       list.innerHTML = tasks.map(function (t) {
         var st = t.status || 'pending';
         var label = st === 'done' ? '已完成 ✓' : (st === 'failed' ? '失败' : '处理中…');
-        var topics = (t.topics || []).join(' / ');
-        var extra = t.controversy ? '<div class="t-extra">争议点：' + escapeHtml(t.controversy) + '</div>' : '';
+        var topics = (t.topics || []);
+        var contro = (t.controversies && Array.isArray(t.controversies)) ? t.controversies
+                     : (t.controversy ? [t.controversy] : []);
+        var topicsHtml = topics.map(function (topic, i) {
+          var c = contro[i] ? contro[i] : '';
+          return '<div class="t-topic">' + escapeHtml(topic) +
+            (c ? ' <span class="t-contro">→ 争议点：' + escapeHtml(c) + '</span>' : '') +
+            '</div>';
+        }).join('');
         return '<div class="task-item">' +
-          '<div class="t-topics">' + escapeHtml(topics) + '</div>' +
-          extra +
+          '<div class="t-topics">' + topicsHtml + '</div>' +
           '<div class="t-meta"><span>' + (t.created_at || '') + '</span>' +
           '<span class="task-status ' + st + '">' + label + '</span></div>' +
           '</div>';
@@ -1176,9 +1183,13 @@
       if (!topics.length) { showSubmit('未解析到有效话题', 'err'); return; }
 
       var id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-      var controversy = (document.getElementById('controversyInput').value || '').trim();
+      var controversyRaw = (document.getElementById('controversyInput').value || '').trim();
+      var controversies = controversyRaw
+        ? controversyRaw.split('/').map(function (s) { return s.trim(); }).filter(Boolean)
+        : [];
       var payload = {
-        id: id, raw: raw, topics: topics, controversy: controversy, status: 'pending',
+        id: id, raw: raw, topics: topics, controversies: controversies,
+        controversy: controversyRaw, status: 'pending',
         created_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
         source: 'web', generated_at: null, result_count: 0
       };
