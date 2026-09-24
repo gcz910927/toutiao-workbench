@@ -786,6 +786,21 @@
       <div class="submitted-title">已提交任务</div>
       <div id="taskList" class="task-list"></div>
     </div>
+
+    <!-- ===== 我的开头库 ===== -->
+    <div class="custom-box" style="margin-top:16px;">
+      <div class="custom-title">📚 我的开头库</div>
+      <p class="custom-hint">把你想用的「半固定开头句式」粘贴到这里（每行一条），提交后会进入生成轮询池，AI 写每条微头条时按结构套用、内容全新。可随时追加，后台自动合并去重。</p>
+      <p class="custom-hint">格式：方括号是占位槽，AI 会自动替换成当期主角。例如：<code>[人物]这人，真不能细看。</code> / <code>[人物]这次[事件]，其实原因很简单，不是因为[猜A]，也不是因为[猜B]，而是[真相]。</code></p>
+      <textarea id="openingInput" class="topic-input" placeholder="每行一条开头句式，多个也可用 / 分隔。例如：&#10;[人物]这人，真不能细看。&#10;看了[人物]的近况，我发现了一个秘密，那就是[真相]。" style="min-height:110px;"></textarea>
+      <div class="custom-actions">
+        <button id="submitOpening" class="btn-primary">添加到开头库</button>
+        <button id="loadOpening" class="btn-ghost">刷新 / 查看</button>
+      </div>
+      <div id="openingStatus" class="submit-status"></div>
+      <div class="submitted-title">当前开头库（<span id="openingCount">0</span> 条）</div>
+      <div id="openingList" class="task-list"></div>
+    </div>
   </div>
 
   <!-- Toast -->
@@ -1238,10 +1253,91 @@
         .catch(function () { document.getElementById('tokenStatus').textContent = '❌ 网络/跨域错误'; });
     });
 
+    // ===== 我的开头库（网页提交 → 仓库 selfhost/user_openings.json → 本机轮询并入轮询池）=====
+    const OPENINGS_PATH = 'selfhost/user_openings.json';
+
+    function showOpening(msg, type) {
+      var el = document.getElementById('openingStatus');
+      el.textContent = msg;
+      el.className = 'submit-status' + (type ? ' ' + type : '');
+    }
+    function renderOpenings(list) {
+      var box = document.getElementById('openingList');
+      document.getElementById('openingCount').textContent = list.length;
+      if (!list.length) {
+        box.innerHTML = '<div style="font-size:0.8rem;color:#adb5bd;">开头库还是空的，粘贴几条试试。</div>';
+        return;
+      }
+      box.innerHTML = list.map(function (t) {
+        return '<div class="task-item"><div class="t-topics"><div class="t-topic">' +
+          escapeHtml(t) + '</div></div></div>';
+      }).join('');
+    }
+    function normalizeOpenings(data) {
+      var arr = [];
+      if (Array.isArray(data)) arr = data;
+      else if (data && Array.isArray(data.frames)) arr = data.frames;
+      return arr.filter(function (x) { return typeof x === 'string'; })
+                .map(function (s) { return s.trim(); }).filter(Boolean);
+    }
+    function getOpenings(token) {
+      return ghApi('/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + OPENINGS_PATH, 'GET', token)
+        .then(function (res) {
+          if (!res.ok || !res.data.content) return { sha: null, frames: [] };
+          try {
+            var content = decodeURIComponent(escape(atob(res.data.content.replace(/\s/g, ''))));
+            return { sha: res.data.sha || null, frames: normalizeOpenings(JSON.parse(content)) };
+          } catch (e) { return { sha: res.data.sha || null, frames: [] }; }
+        });
+    }
+    function submitOpening() {
+      var token = getGhToken();
+      if (!token) { showOpening('请先在上方「GitHub 令牌设置」中填写令牌', 'err'); return; }
+      var raw = document.getElementById('openingInput').value.trim();
+      if (!raw) { showOpening('请至少粘贴一条开头句式', 'err'); return; }
+      var lines = raw.replace(/\//g, '\n').split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+      lines = lines.filter(function (t, i) { return lines.indexOf(t) === i; });
+      if (!lines.length) { showOpening('未解析到有效句式', 'err'); return; }
+      showOpening('提交中…', '');
+      getOpenings(token).then(function (cur) {
+        var merged = cur.frames.slice();
+        lines.forEach(function (t) { if (merged.indexOf(t) === -1) merged.push(t); });
+        var content = b64encodeUtf8(JSON.stringify({ frames: merged }, null, 2));
+        var body = { message: 'openings: +' + lines.length + ' (total ' + merged.length + ')', content: content };
+        if (cur.sha) body.sha = cur.sha;  // 已存在则带 sha 更新，否则新建
+        return ghApi('/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + OPENINGS_PATH, 'PUT', token, body)
+          .then(function (res) {
+            if (res.ok) {
+              showOpening('✅ 已加入开头库，共 ' + merged.length + ' 条（后台下次轮询即生效）', 'ok');
+              renderOpenings(merged);
+              document.getElementById('openingInput').value = '';
+            } else if (res.status === 401) {
+              showOpening('❌ 令牌无效或无权限(401)：需 Contents:write', 'err');
+            } else if (res.status === 403) {
+              showOpening('❌ 权限不足(403)：需 Contents:write', 'err');
+            } else {
+              showOpening('提交失败：' + (res.data.message || res.status), 'err');
+            }
+          });
+      }).catch(function () { showOpening('提交出错（网络/跨域），请重试', 'err'); });
+    }
+    function loadOpenings() {
+      var token = getGhToken();
+      if (!token) { showOpening('请先填写 GitHub 令牌以查看开头库', 'err'); return; }
+      showOpening('加载中…', '');
+      getOpenings(token).then(function (cur) {
+        renderOpenings(cur.frames);
+        showOpening(cur.frames.length ? ('当前开头库共 ' + cur.frames.length + ' 条') : '开头库为空，去粘贴几条吧', cur.frames.length ? 'ok' : '');
+      }).catch(function () { showOpening('加载出错（网络/跨域）', 'err'); });
+    }
+
+    document.getElementById('submitOpening').addEventListener('click', submitOpening);
+    document.getElementById('loadOpening').addEventListener('click', loadOpenings);
+
     // 进入自定义选题 Tab 时尝试刷新状态
     document.querySelectorAll('.tab-item').forEach(function (tab) {
       tab.addEventListener('click', function () {
-        if (tab.dataset.tab === 'custom') { renderTasks(); refreshStatuses(); }
+        if (tab.dataset.tab === 'custom') { renderTasks(); refreshStatuses(); loadOpenings(); }
       });
     });
 
