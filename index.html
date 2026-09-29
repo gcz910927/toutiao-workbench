@@ -650,6 +650,7 @@
     .token-input:focus { border-color: #e63946; }
     .token-status { font-size: 0.8rem; color: #2f9e44; margin-left: 8px; }
     .submitted-title { font-size: 0.85rem; font-weight: 600; color: #495057; margin: 20px 0 10px; }
+    .imit-section-title { font-size: 0.95rem; font-weight: 700; color: #e63946; margin: 22px 4px 12px; display: flex; align-items: center; gap: 6px; }
     .task-list { display: flex; flex-direction: column; gap: 10px; }
     .task-item {
       border: 1px solid #e9ecef; border-radius: 12px; padding: 12px; background: #fff;
@@ -703,6 +704,7 @@
       <span class="refresh-info" id="refreshInfo"></span>
     </div>
     <div id="accordion"></div>
+    <div id="imitInContent"></div>
   </div>
 
   <!-- ===== 热点素材 ===== -->
@@ -1210,7 +1212,7 @@
           .then(function (res) {
             if (!res.ok || !res.data.content) return;
             try {
-              var data = JSON.parse(atob(res.data.content.replace(/\s/g, '')));
+              var data = JSON.parse(decodeURIComponent(escape(atob(res.data.content.replace(/\s/g, '')))));
               t.status = data.status || t.status;
             } catch (e) {}
           });
@@ -1424,9 +1426,10 @@
           .then(function (res) {
             if (!res.ok || !res.data.content) return;
             try {
-              var data = JSON.parse(atob(res.data.content.replace(/\s/g, '')));
+              var data = JSON.parse(decodeURIComponent(escape(atob(res.data.content.replace(/\s/g, '')))));
               t.status = data.status || t.status;
               t.similarity = data.similarity;
+              t.result = data.result;
               if (t.status === 'done' && data.result && !t.shown) {
                 document.getElementById('imitResult').value = data.result;
                 t.shown = true;
@@ -1434,7 +1437,7 @@
               }
             } catch (e) {}
           });
-      })).then(function () { saveImits(tasks); renderImits(); });
+      })).then(function () { saveImits(tasks); renderImits(); renderImitInContent(); });
     }
     function submitImitate() {
       var token = getGhToken();
