@@ -992,6 +992,7 @@
       var visibleBatches = getVisibleBatches();
       if (visibleBatches.length === 0) {
         container.innerHTML = '<div class="empty-state"><div class="icon">\uD83D\uDCEC</div><div class="text">\u6682\u65E0\u5185\u5BB9\uff0c\u7B49\u5F85\u81EA\u52A8\u751F\u6210</div></div>';
+        renderImitInContent();
         return;
       }
 
@@ -1078,9 +1079,74 @@
         toggleWrap.appendChild(toggleBtn);
         container.appendChild(toggleWrap);
       }
+
+      renderImitInContent();
     }
 
     // (内容卡片现由 renderAccordion 通过 buildCard 渲染)
+
+    // ===== 仿写结果也显示在「今日内容」里（仅展示，不发布到头条）=====
+    function renderImitInContent() {
+      var box = document.getElementById('imitInContent');
+      if (!box) return;
+      var tasks = getImits().filter(function (t) {
+        return (t.status === 'done') && t.result;
+      });
+      if (!tasks.length) { box.innerHTML = ''; return; }
+      var html = '<div class="imit-section-title">📝 仿写（' + tasks.length + '）</div>';
+      tasks.forEach(function (t) {
+        var id = 'imit_' + t.id;
+        var copied = isCopied(id);
+        var badge = copied ? '<span class="copied-badge">已复制</span>' : '';
+        var btnCls = copied ? 'copy-btn copied' : 'copy-btn';
+        var btnTxt = copied ? '已复制' : '复制';
+        html += '<div class="content-card' + (copied ? ' copied' : '') + '">' + badge +
+          '<div class="card-header"><div class="card-tags">' +
+          '<span class="tag tag-category">仿写</span>' +
+          '<span class="tag tag-source">仿写生成</span></div>' +
+          '<span class="card-num">' + escapeHtml(t.created_at || '') + '</span></div>' +
+          '<div class="card-body collapsed">' + escapeHtml(t.result) + '</div>' +
+          '<div class="card-footer"><span class="card-time">仿写 · ' + escapeHtml(t.created_at || '') +
+          (t.similarity != null ? (' · 相似度 ' + t.similarity) : '') + '</span>' +
+          '<button class="' + btnCls + '" data-id="' + id + '" ' + (copied ? 'disabled' : '') + '>' +
+          '<svg class="copy-icon" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>' +
+          '<span>' + btnTxt + '</span></button></div></div>';
+      });
+      box.innerHTML = html;
+      box.querySelectorAll('.content-card').forEach(function (card) {
+        var copyBtn = card.querySelector('.copy-btn:not(.copied)');
+        if (copyBtn) {
+          var id = copyBtn.getAttribute('data-id');
+          copyBtn.addEventListener('click', function () {
+            var txt = card.querySelector('.card-body').textContent;
+            copyToClipboard(txt);
+            markCopied(id);
+            copyBtn.classList.add('copied');
+            copyBtn.querySelector('span').textContent = '已复制';
+            copyBtn.disabled = true;
+            card.classList.add('copied');
+            var b = card.querySelector('.card-body'); if (b) b.classList.add('collapsed');
+            if (!card.querySelector('.copied-badge')) {
+              var bd = document.createElement('span'); bd.className = 'copied-badge'; bd.textContent = '已复制';
+              card.insertBefore(bd, card.firstChild);
+            }
+            showToast('已复制到剪贴板');
+          });
+        }
+        var bodyEl = card.querySelector('.card-body');
+        if (bodyEl) {
+          bodyEl.addEventListener('click', function () {
+            var willExpand = bodyEl.classList.contains('collapsed');
+            if (willExpand) {
+              document.querySelectorAll('#accordion .card-body, #imitInContent .card-body').forEach(function (o) {
+                if (o !== bodyEl) o.classList.add('collapsed');
+              });
+              bodyEl.classList.remove('collapsed');
+            } else { bodyEl.classList.add('collapsed'); }
+          });
+        }
+      });
+    }
 
     // ===== Render Hot Topics =====
     function renderTopics() {
@@ -1479,6 +1545,10 @@
       tab.addEventListener('click', function () {
         if (tab.dataset.tab === 'custom') { renderTasks(); refreshStatuses(); loadOpenings(); }
         if (tab.dataset.tab === 'imit') { refreshImitate(); }
+        if (tab.dataset.tab === 'content') {
+          renderImitInContent();
+          if (getImits().length) refreshImitate();
+        }
       });
     });
 
