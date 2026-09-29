@@ -801,6 +801,24 @@
       <div class="submitted-title">当前开头库（<span id="openingCount">0</span> 条）</div>
       <div id="openingList" class="task-list"></div>
     </div>
+
+    <!-- ===== 文章仿写 ===== -->
+    <div class="custom-box" style="margin-top:16px;">
+      <div class="custom-title">📝 文章仿写</div>
+      <p class="custom-hint">把一篇爆款原文粘贴进来，AI 保留它的「结构骨架」（钩子类型/结尾升华/节奏），用【全新文字】重写同话题同人物的另一篇，规避格式化与抄袭。约 10–15 分钟后刷新查看，结果可复制使用。</p>
+      <textarea id="imitInput" class="topic-input" placeholder="粘贴你的爆款原文（可带【第N条】标记或纯文本）" style="min-height:160px;"></textarea>
+      <div class="custom-actions">
+        <button id="submitImitate" class="btn-primary">生成仿写</button>
+        <button id="clearImitate" class="btn-ghost">清空</button>
+      </div>
+      <div id="imitStatus" class="submit-status"></div>
+      <div class="submitted-title">仿写结果（可复制使用）</div>
+      <textarea id="imitResult" class="topic-input" readonly placeholder="生成后这里显示仿写稿" style="min-height:160px; background:#f8f9fa;"></textarea>
+      <div class="custom-actions">
+        <button id="refreshImitate" class="btn-ghost">刷新结果</button>
+      </div>
+      <div id="imitList" class="task-list"></div>
+    </div>
   </div>
 
   <!-- Toast -->
@@ -1334,10 +1352,92 @@
     document.getElementById('submitOpening').addEventListener('click', submitOpening);
     document.getElementById('loadOpening').addEventListener('click', loadOpenings);
 
+    // ===== 文章仿写（网页提交 → 仓库 tasks/imit_*.json → 本机 task_runner 识别 type=imitate 生成 → 回写 result）=====
+    const IMT_KEY = 'submitted_imits';
+    function getImits() { try { return JSON.parse(localStorage.getItem(IMT_KEY)) || []; } catch (e) { return []; } }
+    function saveImits(a) { localStorage.setItem(IMT_KEY, JSON.stringify(a)); }
+    function showImit(msg, type) {
+      var el = document.getElementById('imitStatus');
+      el.textContent = msg; el.className = 'submit-status' + (type ? ' ' + type : '');
+    }
+    function renderImits() {
+      var list = document.getElementById('imitList');
+      var tasks = getImits();
+      if (!tasks.length) {
+        list.innerHTML = '<div style="font-size:0.8rem;color:#adb5bd;">还没有提交过仿写。</div>';
+        return;
+      }
+      list.innerHTML = tasks.map(function (t) {
+        var st = t.status || 'pending';
+        var label = st === 'done' ? '已完成 ✓' : (st === 'failed' ? '失败' : (st === 'skipped' ? '跳过' : '处理中…'));
+        var sim = (t.similarity != null) ? ('　相似度 ' + t.similarity) : '';
+        return '<div class="task-item"><div class="t-topics"><div class="t-topic">仿写稿 ' +
+          escapeHtml(t.created_at || '') + sim + '</div></div>' +
+          '<div class="t-meta"><span class="task-status ' + st + '">' + label + '</span></div></div>';
+      }).join('');
+    }
+    function refreshImitate() {
+      var token = getGhToken();
+      var tasks = getImits();
+      if (!token || !tasks.length) { renderImits(); return; }
+      var pending = tasks.filter(function (t) { return (t.status || 'pending') !== 'done'; });
+      if (!pending.length) { renderImits(); return; }
+      Promise.all(pending.map(function (t) {
+        return ghApi('/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/tasks/' + t.id + '.json', 'GET', token)
+          .then(function (res) {
+            if (!res.ok || !res.data.content) return;
+            try {
+              var data = JSON.parse(atob(res.data.content.replace(/\s/g, '')));
+              t.status = data.status || t.status;
+              t.similarity = data.similarity;
+              if (t.status === 'done' && data.result && !t.shown) {
+                document.getElementById('imitResult').value = data.result;
+                t.shown = true;
+                showImit('✅ 仿写完成，已填入结果框（相似度 ' + (data.similarity != null ? data.similarity : '?') + '），可复制使用', 'ok');
+              }
+            } catch (e) {}
+          });
+      })).then(function () { saveImits(tasks); renderImits(); });
+    }
+    function submitImitate() {
+      var token = getGhToken();
+      if (!token) { showImit('请先在上方「GitHub 令牌设置」中填写令牌', 'err'); return; }
+      var raw = document.getElementById('imitInput').value.trim();
+      if (!raw) { showImit('请粘贴一篇原文', 'err'); return; }
+      var id = 'imit_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      var payload = {
+        id: id, type: 'imitate', source_text: raw, status: 'pending',
+        created_at: new Date().toISOString().slice(0, 16).replace('T', ' '), generated_at: null
+      };
+      var content = b64encodeUtf8(JSON.stringify(payload));
+      showImit('提交中…', '');
+      ghApi('/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/tasks/' + id + '.json', 'PUT', token,
+        { message: 'imitate task', content: content })
+        .then(function (res) {
+          if (res.ok) {
+            showImit('✅ 已提交，约 10–15 分钟后点「刷新结果」或切回本页查看', 'ok');
+            var tasks = getImits(); tasks.unshift(payload); saveImits(tasks); renderImits();
+            document.getElementById('imitInput').value = '';
+          } else if (res.status === 401) {
+            showImit('❌ 令牌无效(401)：需 Contents:write', 'err');
+          } else if (res.status === 403) {
+            showImit('❌ 权限不足(403)：需 Contents:write', 'err');
+          } else {
+            showImit('提交失败：' + (res.data.message || res.status), 'err');
+          }
+        })
+        .catch(function () { showImit('提交出错（网络/跨域），请重试', 'err'); });
+    }
+    document.getElementById('submitImitate').addEventListener('click', submitImitate);
+    document.getElementById('clearImitate').addEventListener('click', function () {
+      document.getElementById('imitInput').value = ''; showImit('', '');
+    });
+    document.getElementById('refreshImitate').addEventListener('click', refreshImitate);
+
     // 进入自定义选题 Tab 时尝试刷新状态
     document.querySelectorAll('.tab-item').forEach(function (tab) {
       tab.addEventListener('click', function () {
-        if (tab.dataset.tab === 'custom') { renderTasks(); refreshStatuses(); loadOpenings(); }
+        if (tab.dataset.tab === 'custom') { renderTasks(); refreshStatuses(); loadOpenings(); refreshImitate(); }
       });
     });
 
@@ -1346,6 +1446,7 @@
       var saved = getGhToken();
       if (saved) document.getElementById('ghToken').value = saved;
       renderTasks();
+      renderImits();
     })();
 
     // ===== Init =====
