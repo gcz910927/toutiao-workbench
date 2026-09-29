@@ -1270,6 +1270,7 @@
       if (!v) { document.getElementById('tokenStatus').textContent = '请输入令牌'; return; }
       localStorage.setItem(TOKEN_KEY, v);
       document.getElementById('tokenStatus').textContent = '已保存 ✓';
+      document.getElementById('imitGhToken').value = v;
     });
     document.getElementById('testToken').addEventListener('click', function () {
       var v = document.getElementById('ghToken').value.trim();
@@ -1291,6 +1292,7 @@
       if (!v) { document.getElementById('imitTokenStatus').textContent = '请输入令牌'; return; }
       localStorage.setItem(TOKEN_KEY, v);
       document.getElementById('imitTokenStatus').textContent = '已保存 ✓';
+      document.getElementById('ghToken').value = v;
     });
     document.getElementById('imitTestToken').addEventListener('click', function () {
       var v = document.getElementById('imitGhToken').value.trim();
@@ -1480,7 +1482,10 @@
     // 初始化：回填令牌 + 渲染已提交列表
     (function initCustom() {
       var saved = getGhToken();
-      if (saved) document.getElementById('ghToken').value = saved;
+      if (saved) {
+        document.getElementById('ghToken').value = saved;
+        document.getElementById('imitGhToken').value = saved;
+      }
       renderTasks();
       renderImits();
     })();
