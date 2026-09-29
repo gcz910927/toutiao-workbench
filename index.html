@@ -694,6 +694,7 @@
     <div class="tab-item" data-tab="topics">热点素材</div>
     <div class="tab-item" data-tab="style">风格档案</div>
     <div class="tab-item" data-tab="custom">自定义选题</div>
+    <div class="tab-item" data-tab="imit">文章仿写</div>
   </div>
 
   <!-- ===== 今日内容 ===== -->
@@ -802,8 +803,12 @@
       <div id="openingList" class="task-list"></div>
     </div>
 
-    <!-- ===== 文章仿写 ===== -->
-    <div class="custom-box" style="margin-top:16px;">
+    <!-- ===== 文章仿写（已独立为顶层 Tab，见 tab-imit） ===== -->
+  </div>
+
+  <!-- ===== 文章仿写（独立模块） ===== -->
+  <div class="content-area" id="tab-imit">
+    <div class="custom-box">
       <div class="custom-title">📝 文章仿写</div>
       <p class="custom-hint">把一篇爆款原文粘贴进来，AI 保留它的「结构骨架」（钩子类型/结尾升华/节奏），用【全新文字】重写同话题同人物的另一篇，规避格式化与抄袭。约 10–15 分钟后刷新查看，结果可复制使用。</p>
       <textarea id="imitInput" class="topic-input" placeholder="粘贴你的爆款原文（可带【第N条】标记或纯文本）" style="min-height:160px;"></textarea>
@@ -818,6 +823,15 @@
         <button id="refreshImitate" class="btn-ghost">刷新结果</button>
       </div>
       <div id="imitList" class="task-list"></div>
+
+      <details class="settings" style="margin-top:18px;">
+        <summary>⚙️ GitHub 令牌设置（首次使用需填写）</summary>
+        <p class="custom-hint">用于把仿写任务写入仓库任务队列。请使用<strong>仅对该公开仓库有 Contents:write 权限</strong>的 fine-grained PAT。令牌仅保存在本浏览器，不会上传。</p>
+        <input id="imitGhToken" class="token-input" type="password" placeholder="ghp_... 或 github_pat_..." />
+        <button id="imitSaveToken" class="btn-ghost">保存令牌</button>
+        <button id="imitTestToken" class="btn-ghost">测试连接</button>
+        <span id="imitTokenStatus" class="token-status"></span>
+      </details>
     </div>
   </div>
 
@@ -1271,6 +1285,27 @@
         .catch(function () { document.getElementById('tokenStatus').textContent = '❌ 网络/跨域错误'; });
     });
 
+    // ===== 文章仿写 Tab 独立的 GitHub 令牌设置（复用同一 TOKEN_KEY）=====
+    document.getElementById('imitSaveToken').addEventListener('click', function () {
+      var v = document.getElementById('imitGhToken').value.trim();
+      if (!v) { document.getElementById('imitTokenStatus').textContent = '请输入令牌'; return; }
+      localStorage.setItem(TOKEN_KEY, v);
+      document.getElementById('imitTokenStatus').textContent = '已保存 ✓';
+    });
+    document.getElementById('imitTestToken').addEventListener('click', function () {
+      var v = document.getElementById('imitGhToken').value.trim();
+      if (!v) { document.getElementById('imitTokenStatus').textContent = '请先输入令牌再测试'; return; }
+      document.getElementById('imitTokenStatus').textContent = '测试中…';
+      ghApi('/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/tasks', 'GET', v)
+        .then(function (res) {
+          if (res.ok) { document.getElementById('imitTokenStatus').textContent = '✅ 连接成功，可写入任务队列'; }
+          else if (res.status === 401) { document.getElementById('imitTokenStatus').textContent = '❌ 令牌无效或无权限(401)'; }
+          else if (res.status === 403) { document.getElementById('imitTokenStatus').textContent = '❌ 权限不足(403)：需 Contents:write'; }
+          else { document.getElementById('imitTokenStatus').textContent = '❌ 失败：' + (res.data.message || res.status); }
+        })
+        .catch(function () { document.getElementById('imitTokenStatus').textContent = '❌ 网络/跨域错误'; });
+    });
+
     // ===== 我的开头库（网页提交 → 仓库 selfhost/user_openings.json → 本机轮询并入轮询池）=====
     const OPENINGS_PATH = 'selfhost/user_openings.json';
 
@@ -1401,7 +1436,7 @@
     }
     function submitImitate() {
       var token = getGhToken();
-      if (!token) { showImit('请先在上方「GitHub 令牌设置」中填写令牌', 'err'); return; }
+      if (!token) { showImit('请先在本页下方「GitHub 令牌设置」中填写令牌', 'err'); return; }
       var raw = document.getElementById('imitInput').value.trim();
       if (!raw) { showImit('请粘贴一篇原文', 'err'); return; }
       var id = 'imit_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -1434,10 +1469,11 @@
     });
     document.getElementById('refreshImitate').addEventListener('click', refreshImitate);
 
-    // 进入自定义选题 Tab 时尝试刷新状态
+    // 进入自定义选题 / 文章仿写 Tab 时刷新各自状态
     document.querySelectorAll('.tab-item').forEach(function (tab) {
       tab.addEventListener('click', function () {
-        if (tab.dataset.tab === 'custom') { renderTasks(); refreshStatuses(); loadOpenings(); refreshImitate(); }
+        if (tab.dataset.tab === 'custom') { renderTasks(); refreshStatuses(); loadOpenings(); }
+        if (tab.dataset.tab === 'imit') { refreshImitate(); }
       });
     });
 
