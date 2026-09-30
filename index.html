@@ -586,6 +586,16 @@
       opacity: 1;
       transform: translateX(-50%) translateY(0);
     }
+    .back-top {
+      position: fixed; top: 14px; right: 14px;
+      width: 44px; height: 44px; border-radius: 50%;
+      background: #e63946; color: #fff; border: none;
+      font-size: 1.4rem; line-height: 1; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+      z-index: 998; display: none; align-items: center; justify-content: center;
+      transition: opacity 0.25s;
+    }
+    .back-top.show { display: flex; }
 
     /* ===== Refresh Bar ===== */
     .refresh-bar {
@@ -839,6 +849,7 @@
 
   <!-- Toast -->
   <div class="toast" id="toast">已复制到剪贴板</div>
+  <button id="backTop" class="back-top" title="回到主页（顶部）">↑</button>
 
   <script src="data.js"></script>
   <script>
@@ -848,6 +859,8 @@
 
     // ===== State =====
     let historyExpanded = false;
+    let dateExpanded = false;
+    let imitExpanded = false;
 
     // ===== Compute Date Cutoff =====
     const cutoffDate = new Date();
@@ -1003,8 +1016,10 @@
         dateGroups[batch.date].push(batch);
       });
       var sortedDates = Object.keys(dateGroups).sort().reverse();
+      var renderDates = dateExpanded ? sortedDates : sortedDates.slice(0, 5);
+      var hiddenDatesCount = sortedDates.length - renderDates.length;
 
-      sortedDates.forEach(function(date) {
+      renderDates.forEach(function(date) {
         var dateBlock = document.createElement('div');
         dateBlock.className = 'acc-date';
 
@@ -1063,6 +1078,18 @@
         });
       });
 
+      // 更早日期分组折叠（需求1：仅展示最近5个日期分组）
+      if (hiddenDatesCount > 0) {
+        var dateToggleWrap = document.createElement('div');
+        dateToggleWrap.className = 'history-toggle-wrap';
+        var dateToggleBtn = document.createElement('button');
+        dateToggleBtn.className = 'history-toggle';
+        dateToggleBtn.textContent = '\u25BE \u5C55\u5F00\u66F4\u65E9\u5185\u5BB9\uff08' + hiddenDatesCount + ' \u4E2A\u65E5\u671F\uff09';
+        dateToggleBtn.addEventListener('click', function () { dateExpanded = true; renderAccordion(); });
+        dateToggleWrap.appendChild(dateToggleBtn);
+        container.appendChild(dateToggleWrap);
+      }
+
       // History toggle
       if (historyBatches.length > 0 || historyExpanded) {
         var toggleWrap = document.createElement('div');
@@ -1081,6 +1108,14 @@
       }
 
       renderImitInContent();
+    }
+
+    // 从仿写结果中提取「正文：」之后的纯正文（需求6）
+    function extractImitBody(text) {
+      if (!text) return '';
+      var m = text.match(/正文[:：]\s*([\s\S]*)$/);
+      if (m) return m[1].trim();
+      return text.trim();
     }
 
     // (内容卡片现由 renderAccordion 通过 buildCard 渲染)
@@ -1105,7 +1140,7 @@
           '<span class="tag tag-category">仿写</span>' +
           '<span class="tag tag-source">仿写生成</span></div>' +
           '<span class="card-num">' + escapeHtml(t.created_at || '') + '</span></div>' +
-          '<div class="card-body collapsed">' + escapeHtml(t.result) + '</div>' +
+          '<div class="card-body' + (copied ? ' collapsed' : '') + '">' + escapeHtml(extractImitBody(t.result)) + '</div>' +
           '<div class="card-footer"><span class="card-time">仿写 · ' + escapeHtml(t.created_at || '') +
           (t.similarity != null ? (' · 相似度 ' + t.similarity) : '') + '</span>' +
           '<button class="' + btnCls + '" data-id="' + id + '" ' + (copied ? 'disabled' : '') + '>' +
@@ -1418,9 +1453,7 @@
       if (!token) { showOpening('请先在上方「GitHub 令牌设置」中填写令牌', 'err'); return; }
       var raw = document.getElementById('openingInput').value.trim();
       if (!raw) { showOpening('请至少粘贴一条开头句式', 'err'); return; }
-      var lines = raw.replace(/\//g, '\n').split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
-      lines = lines.filter(function (t, i) { return lines.indexOf(t) === i; });
-      if (!lines.length) { showOpening('未解析到有效句式', 'err'); return; }
+      var lines = [raw];  // 整段作为单条开头，不按空格/回车/“/”拆分（需求3）
       showOpening('提交中…', '');
       getOpenings(token).then(function (cur) {
         var merged = cur.frames.slice();
@@ -1472,7 +1505,8 @@
         list.innerHTML = '<div style="font-size:0.8rem;color:#adb5bd;">还没有提交过仿写。</div>';
         return;
       }
-      list.innerHTML = tasks.map(function (t) {
+      var showTasks = imitExpanded ? tasks : tasks.slice(0, 5);
+      list.innerHTML = showTasks.map(function (t) {
         var st = t.status || 'pending';
         var label = st === 'done' ? '已完成 ✓' : (st === 'failed' ? '失败' : (st === 'skipped' ? '跳过' : '处理中…'));
         var sim = (t.similarity != null) ? ('　相似度 ' + t.similarity) : '';
@@ -1480,6 +1514,16 @@
           escapeHtml(t.created_at || '') + sim + '</div></div>' +
           '<div class="t-meta"><span class="task-status ' + st + '">' + label + '</span></div></div>';
       }).join('');
+      if (tasks.length > 5) {
+        var more = document.createElement('div');
+        more.className = 'history-toggle-wrap';
+        var btn = document.createElement('button');
+        btn.className = 'history-toggle';
+        btn.textContent = imitExpanded ? '\u2591 \u6536\u8D77 \u2591' : '\u25BC \u5C55\u5F00\u66F4\u591A\uff08' + (tasks.length - 5) + ' \u6761\uff09';
+        btn.addEventListener('click', function () { imitExpanded = !imitExpanded; renderImits(); });
+        more.appendChild(btn);
+        list.appendChild(more);
+      }
     }
     function refreshImitate() {
       var token = getGhToken();
@@ -1497,7 +1541,7 @@
               t.similarity = data.similarity;
               t.result = data.result;
               if (t.status === 'done' && data.result && !t.shown) {
-                document.getElementById('imitResult').value = data.result;
+                document.getElementById('imitResult').value = extractImitBody(data.result);
                 t.shown = true;
                 showImit('✅ 仿写完成，已填入结果框（相似度 ' + (data.similarity != null ? data.similarity : '?') + '），可复制使用', 'ok');
               }
@@ -1561,6 +1605,21 @@
       }
       renderTasks();
       renderImits();
+    })();
+
+    // 回到顶部 / 主页 悬浮按钮（需求5）
+    (function initBackTop() {
+      var btn = document.getElementById('backTop');
+      if (!btn) return;
+      window.addEventListener('scroll', function () {
+        if (window.scrollY > 300) btn.classList.add('show');
+        else btn.classList.remove('show');
+      });
+      btn.addEventListener('click', function () {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        var cTab = document.querySelector('.tab-item[data-tab="content"]');
+        if (cTab) cTab.click();
+      });
     })();
 
     // ===== Init =====
